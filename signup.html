@@ -25,7 +25,7 @@
       const formData = new FormData(this);
       const data = Object.fromEntries(formData.entries());
 
-      const res = await fetch("https://ecomops-sarar20225.onrender.com/signup", {
+      const res = await fetch("https://ecomops-sarar20225.onrender.com/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
