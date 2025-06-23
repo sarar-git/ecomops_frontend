@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await res.json();
       if (res.ok) {
         alert("Signup successful! Please login.");
-        window.location.href = "login.html";
+        window.location.href = "index.html";
       } else {
         alert(result.detail || "Signup failed.");
       }
