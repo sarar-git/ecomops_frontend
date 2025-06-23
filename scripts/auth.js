@@ -1,4 +1,4 @@
-const apiBase = "https://ecomops-sarar20225.onrender.com/app/";  // Change if needed
+const apiBase = "https://ecomops-sarar20225.onrender.com/auth/";  // Change if needed
 document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signupForm");
   const loginForm = document.getElementById("loginForm");
