@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const formData = new FormData(signupForm);
       const data = Object.fromEntries(formData.entries());
 
-      const res = await fetch(`${apiBase}/auth/signup`, {
+      const res = await fetch(`${apiBase}/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
