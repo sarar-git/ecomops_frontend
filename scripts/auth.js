@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const formData = new FormData(loginForm);
       const data = Object.fromEntries(formData.entries());
 
-      const res = await fetch(`${apiBase}/login`, {
+      const res = await fetch(`${apiBase}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
