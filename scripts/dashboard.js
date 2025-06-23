@@ -18,11 +18,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   } else {
     alert("Access denied. Please login again.");
     localStorage.removeItem("token");
-    window.location.href = "login.html";
+    window.location.href = "index.html";
   }
 
   document.getElementById("logoutBtn").addEventListener("click", () => {
     localStorage.removeItem("token");
-    window.location.href = "login.html";
+    window.location.href = "index.html";
   });
 });
