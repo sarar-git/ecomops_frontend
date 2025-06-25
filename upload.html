@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Upload Report</title>
+  <style>
+    .btn-group button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: 1px solid #ccc;
+      background: #f0f0f0;
+      cursor: pointer;
+    }
+    .btn-group button.active {
+      background-color: #4CAF50;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h2>Upload Your Report</h2>
+
+  <form id="uploadForm">
+
+    <!-- Website Buttons -->
+    <label>Choose Website:</label><br />
+    <div id="websiteButtons" class="btn-group">
+      <button type="button" data-value="Amazon">Amazon</button>
+      <button type="button" data-value="Flipkart">Flipkart</button>
+      <button type="button" data-value="Meesho">Meesho</button>
+      <button type="button" data-value="Ajio">Ajio</button>
+      <button type="button" data-value="Jiomart">Jiomart</button>
+      <button type="button" data-value="Myntra">Myntra</button>
+      <button type="button" data-value="Snapdeal">Snapdeal</button>
+    </div>
+    <input type="hidden" name="website" required><br /><br />
+
+    <!-- File Format -->
+    <label>Report Type:</label><br />
+    <div id="reportButtons" class="btn-group">
+      <button type="button" data-value="Order Report">Order Report</button>
+      <button type="button" data-value="Return Report">Return Report</button>
+      <button type="button" data-value="Payment Report">Payment Report</button>
+    </div>
+    <input type="hidden" name="report_type" required><br /><br />
+
+    <!-- Duration -->
+    <label>Start Date:</label>
+    <input type="date" name="start_date" required><br /><br />
+
+    <label>End Date:</label>
+    <input type="date" name="end_date" required><br /><br />
+
+    <!-- File Upload -->
+    <label>Select Report File:</label>
+    <input type="file" name="file" required><br /><br />
+
+    <button type="submit">Upload</button>
+  </form>
+
+  <div id="status"></div>
+
+  <script src="upload.js"></script>
+</body>
+</html>
