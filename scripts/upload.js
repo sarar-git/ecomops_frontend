@@ -1,5 +1,11 @@
 const apiBase = "https://ecomops-sarar20225.onrender.com/uploads";
 
+const token = localStorage.getItem("token");
+if (!token) {
+  window.location.href = "index.html"; // Redirect to login
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("uploadForm");
   const statusDiv = document.getElementById("status");
