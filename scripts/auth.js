@@ -1,5 +1,6 @@
 // scripts/auth.js
 import { supabase } from "./supabaseClient.js";
+
 document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signupForm");
   const loginForm = document.getElementById("loginForm");
@@ -11,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const formData = new FormData(signupForm);
       const { email, password, name, company_name, gstin } = Object.fromEntries(formData.entries());
 
-      const { data: signupData, error: signupError  } = await supabase.auth.signUp({
+      const { data: signupData, error: signupError } = await supabase.auth.signUp({
         email,
         password
       });
@@ -21,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const user_id = signupData.user.id; // correct variable
+      const user_id = signupData.user.id;
       if (user_id) {
         const { error: insertError } = await supabase.from("users").insert([
           {
@@ -30,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
             company_name,
             gstin
           }
-        ]);    
+        ]);
 
         if (insertError) {
           console.error("Failed to save user details: ", insertError.message);
@@ -39,9 +40,11 @@ document.addEventListener("DOMContentLoaded", () => {
           alert("Signup successful! Please check your email to confirm.");
           window.location.href = "index.html";
         }
-        } else {
-          alert("Signup succeeded, but user ID not found.");
-        }
+      } else {
+        alert("Signup succeeded, but user ID not found.");
+      }
+    });
+  }
 
   // 🔐 LOGIN
   if (loginForm) {
