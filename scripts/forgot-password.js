@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const email = new FormData(form).get("email");
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://sarar-git.github.io/ecomops_frontend//reset-password.html", // replace with actual URL
+      redirectTo: "https://sarar-git.github.io/ecomops_frontend//forgot-password.html", // replace with actual URL
     });
 
     if (error) {
