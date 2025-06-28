@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
         email,
         password
       });
+      emailRedirectTo: "https://sarar-git.github.io/ecomops_frontend/verify.html"
 
       if (signupError) {
         alert(signupError.message || "Signup failed.");
