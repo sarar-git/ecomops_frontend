@@ -1,48 +1,47 @@
-const apiBase = "https://ecomops-sarar20225.onrender.com/auth";  // Change if needed
+// auth.js
+
 document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signupForm");
   const loginForm = document.getElementById("loginForm");
 
+  // 🔐 Signup
   if (signupForm) {
     signupForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const formData = new FormData(signupForm);
-      const data = Object.fromEntries(formData.entries());
+      const { email, password } = Object.fromEntries(formData.entries());
 
-      const res = await fetch(`${apiBase}/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password
       });
 
-      const result = await res.json();
-      if (res.ok) {
-        alert("Signup successful! Please login.");
-        window.location.href = "index.html";
+      if (error) {
+        alert(error.message || "Signup failed.");
       } else {
-        alert(result.detail || "Signup failed.");
+        alert("Signup successful! Please check your email to confirm.");
+        window.location.href = "index.html";
       }
     });
   }
 
+  // 🔐 Login
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const formData = new FormData(loginForm);
-      const data = Object.fromEntries(formData.entries());
+      const { email, password } = Object.fromEntries(formData.entries());
 
-      const res = await fetch(`${apiBase}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
 
-      const result = await res.json();
-      if (res.ok) {
-        localStorage.setItem("token", result.access_token);
-        window.location.href = "dashboard.html";
+      if (error) {
+        alert(error.message || "Login failed.");
       } else {
-        alert(result.detail || "Login failed.");
+        localStorage.setItem("token", data.session.access_token);  // Save the access token
+        window.location.href = "dashboard.html";
       }
     });
   }
