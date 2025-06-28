@@ -4,6 +4,7 @@ import { supabase } from "./supabaseClient.js";
 document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signupForm");
   const loginForm = document.getElementById("loginForm");
+  const resendBtn = document.getElementById("resendVerificationBtn");
 
   // 🔐 SIGNUP
   if (signupForm) {
