@@ -1,0 +1,61 @@
+<!-- verify.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Email Verification</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h2>Email Verification</h2>
+  <p id="message">Verifying your email...</p>
+
+  <!-- Import Supabase JS client -->
+  <script type="module">
+    import { supabase } from './scripts/supabaseClient.js';
+
+    async function verifyEmail() {
+      const hash = window.location.hash.substr(1); // remove leading #
+      const params = new URLSearchParams(hash);
+
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+      const type = params.get('type'); // should be 'signup'
+
+      const messageEl = document.getElementById("message");
+
+      if (!access_token || !refresh_token || type !== 'signup') {
+        messageEl.textContent = "Invalid or expired verification link.";
+        return;
+      }
+
+      // Save the session
+      const { data, error } = await supabase.auth.setSession({
+        access_token,
+        refresh_token
+      });
+
+      if (error) {
+        console.error("Session error:", error.message);
+        messageEl.textContent = "Email verification failed.";
+        return;
+      }
+
+      messageEl.textContent = "✅ Email verified successfully! Redirecting to login page...";
+
+      // Redirect to login page after 3 seconds
+      setTimeout(() => {
+        window.location.href = "index.html";
+      }, 3000);
+    }
+
+    verifyEmail();
+  </script>
+</body>
+</html>
