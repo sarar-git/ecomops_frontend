@@ -19,9 +19,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const { data: signupData, error: signupError } = await supabase.auth.signUp({
         email,
-        password
+        password,
+        emailRedirectTo: "https://sarar-git.github.io/ecomops_frontend/verify.html"
       });
-      emailRedirectTo: "https://sarar-git.github.io/ecomops_frontend/verify.html"
+      
 
       if (signupError) {
         alert(signupError.message || "Signup failed.");
