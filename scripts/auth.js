@@ -30,9 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
             company_name,
             gstin
           }
-        ]);
-      }
-    
+        ]);    
 
         if (insertError) {
           console.error("Failed to save user details: ", insertError.message);
