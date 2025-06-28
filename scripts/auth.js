@@ -5,6 +5,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signupForm");
   const loginForm = document.getElementById("loginForm");
   const resendBtn = document.getElementById("resendVerificationBtn");
+  const resendSection = document.getElementById("resendSection");
+
+  let savedEmail = "";
+
 
   // 🔐 SIGNUP
   if (signupForm) {
@@ -39,7 +43,9 @@ document.addEventListener("DOMContentLoaded", () => {
           alert("Signup succeeded but saving profile info failed.");
         } else {
           alert("Signup successful! Please check your email to confirm.");
-          window.location.href = "index.html";
+          // Show resend UI
+          savedEmail = email;
+          resendSection.style.display = "block";
         }
       } else {
         alert("Signup succeeded, but user ID not found.");
@@ -49,22 +55,23 @@ document.addEventListener("DOMContentLoaded", () => {
   // Resend verification email
   if (resendBtn) {
     resendBtn.addEventListener("click", async () => {
-      const email = resendBtn.dataset.email || prompt("Enter your email:");
-      if (!email) return;
+      if (!savedEmail) {
+        alert("No email found to resend verification.");
+        return;
+      }
 
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email
+        email: savedEmail
       });
 
       if (error) {
-        alert("Error resending email: " + error.message);
+        alert("Failed to resend verification email: " + error.message);
       } else {
         alert("Verification email resent. Please check your inbox.");
       }
     });
   }
-
   // 🔐 LOGIN
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
