@@ -10,55 +10,91 @@
       padding: 2rem;
       text-align: center;
     }
+    .tick {
+      font-size: 4rem;
+      color: green;
+    }
+    #resendBtn {
+      display: none;
+      margin-top: 1rem;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+    }
   </style>
 </head>
 <body>
+  <div class="tick">✅</div>
   <h2>Email Verification</h2>
-  <p id="message">Verifying your email...</p>
+  <p id="message">Verifying your email…</p>
+  <p id="countdown">You’ll be able to resend in <span id="timer">30</span>s</p>
+  <button id="resendBtn">Resend verification email</button>
 
-  <!-- Import Supabase JS client -->
   <script type="module">
     import { supabase } from './scripts/supabaseClient.js';
 
-    async function verifyEmail() {
-      const hash = window.location.hash.substr(1); // remove leading #
-      const params = new URLSearchParams(hash);
+    const messageEl = document.getElementById("message");
+    const countdownEl = document.getElementById("countdown");
+    const timerEl = document.getElementById("timer");
+    const resendBtn = document.getElementById("resendBtn");
 
+    async function verifyEmail() {
+      const hash = window.location.hash.substr(1);
+      const params = new URLSearchParams(hash);
       const access_token = params.get('access_token');
       const refresh_token = params.get('refresh_token');
-      const type = params.get('type'); // should be 'signup'
-
-      const messageEl = document.getElementById("message");
+      const type = params.get('type');
 
       if (!access_token || !refresh_token || type !== 'signup') {
         messageEl.textContent = "Invalid or expired verification link.";
+        countdownEl.style.display = 'none';
         return;
       }
 
-      // Save the session
-      const { data, error } = await supabase.auth.setSession({
-        access_token,
-        refresh_token
-      });
-
+      const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
       if (error) {
         console.error("Session error:", error.message);
-        messageEl.textContent = "Email verification failed.";
+        messageEl.textContent = "Email verification failed or link expired.";
+        countdownEl.style.display = 'none';
+        resendBtn.style.display = 'block';
         return;
       }
 
-      messageEl.textContent = "✅ Email verified successfully! Redirecting to login page...";
+      messageEl.textContent = "✅ Email verified successfully!";
+      countdownEl.style.display = 'none';
+      resendBtn.style.display = 'none';
 
-      // Redirect to login page after 3 seconds
-      setTimeout(() => {
-        window.location.href = "index.html";
-      }, 3000);
+      setTimeout(() => window.location.href = "index.html", 3000);
     }
 
-    verifyEmail();
-  </script>
-  
-  <button id="resendVerificationBtn">Resend Verification Email</button>
+    async function resendEmail() {
+      const email = prompt("Enter your email to resend the verification link:");
+      if (!email) return;
+      const { error } = await supabase.auth.resend({ type: 'signup', email });
+      if (error) return alert("Error resending: " + error.message);
+      alert("Verification email resent. Please check your inbox.");
+      startCountdown();
+    }
 
+    function startCountdown() {
+      resendBtn.disabled = true;
+      countdownEl.style.display = 'block';
+      let count = 30;
+      timerEl.textContent = count;
+      const interval = setInterval(() => {
+        count--;
+        timerEl.textContent = count;
+        if (count <= 0) {
+          clearInterval(interval);
+          countdownEl.style.display = 'none';
+          resendBtn.disabled = false;
+          resendBtn.style.display = 'block';
+        }
+      }, 1000);
+    }
+
+    resendBtn.addEventListener("click", resendEmail);
+
+    verifyEmail().then(() => startCountdown());
+  </script>
 </body>
 </html>
