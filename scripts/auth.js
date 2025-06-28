@@ -16,17 +16,16 @@ document.addEventListener("DOMContentLoaded", () => {
         password
       });
 
-      if (error) {
-        alert(error.message || "Signup failed.");
+      if (signupError) {
+        alert(signupError.message || "Signup failed.");
         return;
       }
 
-      const userId = data.user?.id;
-      if (userId) {
-        // Insert extra fields into 'users' table
+      const user_id = signupData.user.id; // correct variable
+      if (user_id) {
         const { error: insertError } = await supabase.from("users").insert([
           {
-            user_id: userId,
+            user_id,
             name,
             company_name,
             gstin
@@ -34,17 +33,15 @@ document.addEventListener("DOMContentLoaded", () => {
         ]);
 
         if (insertError) {
-          console.error("Insert error:", insertError.message);
+          console.error("Failed to save user details: ", insertError.message);
           alert("Signup succeeded but saving profile info failed.");
         } else {
           alert("Signup successful! Please check your email to confirm.");
           window.location.href = "index.html";
         }
-      } else {
-        alert("Signup succeeded, but user ID not found.");
-      }
-    });
-  }
+        } else {
+          alert("Signup succeeded, but user ID not found.");
+        }
 
   // 🔐 LOGIN
   if (loginForm) {
