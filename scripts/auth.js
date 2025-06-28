@@ -45,6 +45,25 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+  // Resend verification email
+  if (resendBtn) {
+    resendBtn.addEventListener("click", async () => {
+      const email = resendBtn.dataset.email || prompt("Enter your email:");
+      if (!email) return;
+
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email
+      });
+
+      if (error) {
+        alert("Error resending email: " + error.message);
+      } else {
+        alert("Verification email resent. Please check your inbox.");
+      }
+    });
+  }
+});
 
   // 🔐 LOGIN
   if (loginForm) {
