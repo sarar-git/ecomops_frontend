@@ -1,15 +1,15 @@
-// auth.js
+// scripts/auth.js
 
 document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signupForm");
   const loginForm = document.getElementById("loginForm");
 
-  // 🔐 Signup
+  // 🔐 SIGNUP
   if (signupForm) {
     signupForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const formData = new FormData(signupForm);
-      const { email, password } = Object.fromEntries(formData.entries());
+      const { email, password, name, company_name, gstin } = Object.fromEntries(formData.entries());
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -18,14 +18,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (error) {
         alert(error.message || "Signup failed.");
+        return;
+      }
+
+      const userId = data.user?.id;
+      if (userId) {
+        // Insert extra fields into 'users' table
+        const { error: insertError } = await supabase.from("users").insert([
+          {
+            user_id: userId,
+            name,
+            company_name,
+            gstin
+          }
+        ]);
+
+        if (insertError) {
+          console.error("Insert error:", insertError.message);
+          alert("Signup succeeded but saving profile info failed.");
+        } else {
+          alert("Signup successful! Please check your email to confirm.");
+          window.location.href = "index.html";
+        }
       } else {
-        alert("Signup successful! Please check your email to confirm.");
-        window.location.href = "index.html";
+        alert("Signup succeeded, but user ID not found.");
       }
     });
   }
 
-  // 🔐 Login
+  // 🔐 LOGIN
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -40,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (error) {
         alert(error.message || "Login failed.");
       } else {
-        localStorage.setItem("token", data.session.access_token);  // Save the access token
+        localStorage.setItem("token", data.session.access_token);
         window.location.href = "dashboard.html";
       }
     });
