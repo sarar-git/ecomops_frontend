@@ -63,7 +63,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-});
 
   // 🔐 LOGIN
   if (loginForm) {
