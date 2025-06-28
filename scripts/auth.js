@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const formData = new FormData(signupForm);
       const { email, password, name, company_name, gstin } = Object.fromEntries(formData.entries());
 
-      const { data, error } = await supabase.auth.signUp({
+      const { data: signupData, error: signupError  } = await supabase.auth.signUp({
         email,
         password
       });
@@ -31,6 +31,8 @@ document.addEventListener("DOMContentLoaded", () => {
             gstin
           }
         ]);
+      }
+    
 
         if (insertError) {
           console.error("Failed to save user details: ", insertError.message);
