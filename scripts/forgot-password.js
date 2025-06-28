@@ -1,20 +1,24 @@
+// scripts/forgot-password.js
 import { supabase } from './supabaseClient.js';
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("forgotPasswordForm");
+  const message = document.getElementById("message");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const email = new FormData(form).get("email");
+    const email = form.email.value;
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://sarar-git.github.io/ecomops_frontend//forgot-password.html", // replace with actual URL
+      redirectTo: "https://sarar-git.github.io/ecomops_frontend/reset-password.html" // change to your actual reset URL
     });
 
     if (error) {
-      alert("❌ Failed to send reset email: " + error.message);
+      message.textContent = `❌ Error: ${error.message}`;
+      message.style.color = 'red';
     } else {
-      alert("📧 Reset email sent! Check your inbox.");
+      message.textContent = "✅ Reset link sent! Please check your email.";
+      message.style.color = 'green';
       form.reset();
     }
   });
