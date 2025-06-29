@@ -112,8 +112,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     uploadData.append("duration", duration);
     uploadData.append("file", file);
 
-    const { data: freshSession } = await supabase.auth.getSession();
+    const { data: freshSession, error } = await supabase.auth.getSession();
+    if (error || !freshSession || !freshSession.session) {
+      console.error("❌ Could not get fresh session:", error || "No session found");
+      localStorage.clear();
+      window.location.href = "index.html";
+      return;
+    }  
     const freshToken = freshSession?.session?.access_token;
+    console.log("🆕 Using fresh token:", freshToken);
     
     try {
       const uploadRes = await fetch(`${apiBase}/upload`, {
