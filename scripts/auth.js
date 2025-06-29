@@ -4,8 +4,6 @@ import { supabase } from "./supabaseClient.js";
 document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signupForm");
   const loginForm = document.getElementById("loginForm");
-  const resendBtn = document.getElementById("resendVerificationBtn");
-  const resendSection = document.getElementById("resendSection");
 
   let savedEmail = "";
 
@@ -53,26 +51,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       } else {
         alert("Signup succeeded, but user ID not found.");
-      }
-    });
-  }
-  // Resend verification email
-  if (resendBtn) {
-    resendBtn.addEventListener("click", async () => {
-      if (!savedEmail) {
-        alert("No email found to resend verification.");
-        return;
-      }
-
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: savedEmail
-      });
-
-      if (error) {
-        alert("Failed to resend verification email: " + error.message);
-      } else {
-        alert("Verification email resent. Please check your inbox.");
       }
     });
   }
