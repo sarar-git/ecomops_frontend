@@ -1,11 +1,23 @@
-const apiBase = "https://ecomops-sarar20225.onrender.com/uploads";
-const token = localStorage.getItem("token");
+import { supabase } from "./supabaseClient.js";
 
-// Redirect to login if token is missing
-if (!token) {
-  window.location.href = "index.html";
-}
-
+(async () => {
+  const token = localStorage.getItem("sb-access-token");
+  const refresh = localStorage.getItem("sb-refresh-token");
+  const apiBase = "https://ecomops-sarar20225.onrender.com/uploads";
+  if (!token || !refresh) {
+    window.location.href = "index.html";
+  }
+  const { data, error } = await supabase.auth.setSession({ access_token: token, refresh_token: refresh });
+  if (error) {
+    console.error("Session refresh error:", error.message);
+    localStorage.clear();
+    window.location.href = "index.html";
+  } else {
+    // Save updated tokens
+    localStorage.setItem("sb-access-token", data.session.access_token);
+    localStorage.setItem("sb-refresh-token", data.session.refresh_token);
+  }
+})();
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("uploadForm");
   const statusDiv = document.getElementById("status");
