@@ -65,11 +65,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const file = formData.get("file");
 
     if (!website || !report_type || !start_date || !end_date || !file) {
+      console.log("❌ Missing field(s):", { website, report_type, start_date, end_date, file });
       statusDiv.innerText = "❗ Please fill all fields and select a file.";
       return;
     }
 
     const duration = `${start_date} to ${end_date}`;
+    console.log("🔍 Checking for duplicate report with:", { website, report_type, duration });
 
     try {
       const checkRes = await fetch(
@@ -83,12 +85,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
 
       if (checkRes.ok) {
+        console.log("🧾 Duplicate check response status:", checkRes.status);
         const existing = await checkRes.json();
         if (existing.exists) {
           const confirmOverwrite = confirm(
             `A report already exists:\n\n📄 File ID: ${existing.id}\n🕒 Uploaded: ${existing.uploaded_at}\n\nDo you want to replace it?`
           );
-          if (!confirmOverwrite) return;
+          if (!confirmOverwrite)
+          {
+            console.log("⛔ Upload canceled by user.");
+            return;
         }
       }
     } catch (err) {
@@ -96,7 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       statusDiv.innerText = "⚠️ Failed to check for duplicates.";
       return;
     }
-
+     console.log("📤 Proceeding to upload file...");
     const uploadData = new FormData();
     uploadData.append("website", website);
     uploadData.append("report_type", report_type);
@@ -113,6 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       const result = await uploadRes.json();
+      console.log("📦 Upload response:", result);
 
       if (uploadRes.ok) {
         statusDiv.innerText = "✅ Upload successful!";
