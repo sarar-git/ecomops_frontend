@@ -16,11 +16,13 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const formData = new FormData(signupForm);
       const { email, password, name, company_name, gstin } = Object.fromEntries(formData.entries());
+      const emailRedirectUrl = "https://sarar-git.github.io/ecomops_frontend/verify.html";
+      console.log("Redirect URL being used in sign-up:", emailRedirectUrl);
 
       const { data: signupData, error: signupError } = await supabase.auth.signUp({
         email,
         password,
-        emailRedirectTo: "https://sarar-git.github.io/ecomops_frontend/verify.html"
+        emailRedirectTo: emailRedirectUrl
       });
       
 
