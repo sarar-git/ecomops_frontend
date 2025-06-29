@@ -2,7 +2,8 @@ import { supabase } from "./supabaseClient.js";
 
 let token = null; // <-- declare globally
 
-(async () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("Upload page DOM loaded");
   const access = localStorage.getItem("sb-access-token");
   const refresh = localStorage.getItem("sb-refresh-token");
   const apiBase = "https://ecomops-sarar20225.onrender.com/uploads";
