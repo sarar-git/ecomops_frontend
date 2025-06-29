@@ -91,7 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (error) {
         alert(error.message || "Login failed.");
       } else {
-        localStorage.setItem("token", data.session.access_token);
+        localStorage.setItem("sb-access-token", data.session.access_token);
+        localStorage.setItem("sb-refresh-token", data.session.refresh_token);
         window.location.href = "dashboard.html";
       }
     });
