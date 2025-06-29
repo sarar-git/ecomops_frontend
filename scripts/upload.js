@@ -97,6 +97,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           {
             console.log("⛔ Upload canceled by user.");
             return;
+          }
         }
       }
     } catch (err) {
