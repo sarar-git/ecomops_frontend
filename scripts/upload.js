@@ -112,6 +112,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     uploadData.append("duration", duration);
     uploadData.append("file", file);
 
+    const { data: freshSession } = await supabase.auth.getSession();
+    const freshToken = freshSession?.session?.access_token;
+    
     try {
       const uploadRes = await fetch(`${apiBase}/upload`, {
         method: "POST",
