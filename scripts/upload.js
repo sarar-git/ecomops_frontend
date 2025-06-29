@@ -1,11 +1,12 @@
 import { supabase } from "./supabaseClient.js";
 
+const apiBase = "https://ecomops-sarar20225.onrender.com/uploads";
+
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("Upload page DOM loaded");
 
   const token = localStorage.getItem("sb-access-token");
   const refresh = localStorage.getItem("sb-refresh-token");
-  const apiBase = "https://ecomops-sarar20225.onrender.com/uploads";
 
   if (!token || !refresh) {
     console.warn("No tokens found, redirecting to login...");
@@ -29,6 +30,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   localStorage.setItem("sb-access-token", data.session.access_token);
   localStorage.setItem("sb-refresh-token", data.session.refresh_token);
 
+  const sessionToken = data.session.access_token;
   // ✅ Now all DOM and tokens are ready – set up event handlers below
   const form = document.getElementById("uploadForm");
   const statusDiv = document.getElementById("status");
