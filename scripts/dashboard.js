@@ -1,4 +1,4 @@
-import { supabase } from './scripts/supabaseClient.js';
+import { supabase } from 'scripts/supabaseClient.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
   const access_token = localStorage.getItem("sb-access-token");
