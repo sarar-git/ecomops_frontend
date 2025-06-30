@@ -1,45 +1,60 @@
 import { supabase } from './supabaseClient.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const access_token = localStorage.getItem("sb-access-token");
-  const refresh_token = localStorage.getItem("sb-refresh-token");
+  // ✅ Step 1: Try to get an existing session (persistent via cookies or memory)
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
 
-  if (!access_token || !refresh_token) {
-    console.warn("No tokens found, redirecting to login...");
-    redirectToLogin();
-    return;
+  if (session) {
+    // Session is already valid, use it
+    console.log("✅ Existing session found.");
+    localStorage.setItem("sb-access-token", session.access_token);
+    localStorage.setItem("sb-refresh-token", session.refresh_token);
+    loadDashboard(session.access_token, session.user);
+  } else {
+    // No session found, try restoring it using saved tokens
+    const access_token = localStorage.getItem("sb-access-token");
+    const refresh_token = localStorage.getItem("sb-refresh-token");
+
+    if (!access_token || !refresh_token) {
+      console.warn("No tokens found, redirecting to login...");
+      return redirectToLogin();
+    }
+
+    // ✅ Try to restore session
+    const { data: sessionData, error: restoreError } = await supabase.auth.setSession({
+      access_token,
+      refresh_token
+    });
+
+    if (restoreError || !sessionData.session) {
+      console.error("❌ Session restoration failed:", restoreError?.message);
+      return redirectToLogin();
+    }
+
+    // ✅ Save refreshed tokens and continue
+    localStorage.setItem("sb-access-token", sessionData.session.access_token);
+    localStorage.setItem("sb-refresh-token", sessionData.session.refresh_token);
+    loadDashboard(sessionData.session.access_token, sessionData.session.user);
   }
 
-  // ✅ Refresh session
-  const { data: sessionData, error } = await supabase.auth.setSession({
-    access_token,
-    refresh_token
-  });
+  // ✅ Monitor auth state changes
+  supabase.auth.onAuthStateChange((event, newSession) => {
+    console.log("🔄 Auth state changed:", event, newSession);
 
-  if (error || !sessionData.session) {
-    console.error("Session restoration failed:", error?.message);
-    redirectToLogin();
-    return;
-  }
-
-  // ✅ Store fresh tokens
-  localStorage.setItem("sb-access-token", sessionData.session.access_token);
-  localStorage.setItem("sb-refresh-token", sessionData.session.refresh_token);
-
-   // ✅ Monitor auth changes
-  supabase.auth.onAuthStateChange((event, session) => {
-    console.log("Auth event:", event, session);
-    if (!session) {
+    if (!newSession) {
+      // User signed out or session expired
       localStorage.clear();
       redirectToLogin();
+    } else {
+      // Save new tokens
+      localStorage.setItem("sb-access-token", newSession.access_token);
+      localStorage.setItem("sb-refresh-token", newSession.refresh_token);
     }
   });
 
-
-  // ✅ Load dashboard data
-  loadDashboard(sessionData.session.access_token, sessionData.session.user);
-
-  
   // ✅ Setup logout
   document.getElementById("logoutBtn").addEventListener("click", async () => {
     await supabase.auth.signOut();
