@@ -10,15 +10,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // ✅ Monitor auth changes
-  supabase.auth.onAuthStateChange((event, session) => {
-    console.log("Auth event:", event, session);
-    if (!session) {
-      localStorage.clear();
-      redirectToLogin();
-    }
-  });
-
   // ✅ Refresh session
   const { data: sessionData, error } = await supabase.auth.setSession({
     access_token,
@@ -35,9 +26,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   localStorage.setItem("sb-access-token", sessionData.session.access_token);
   localStorage.setItem("sb-refresh-token", sessionData.session.refresh_token);
 
+   // ✅ Monitor auth changes
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log("Auth event:", event, session);
+    if (!session) {
+      localStorage.clear();
+      redirectToLogin();
+    }
+  });
+
+
   // ✅ Load dashboard data
   loadDashboard(sessionData.session.access_token, sessionData.session.user);
 
+  
   // ✅ Setup logout
   document.getElementById("logoutBtn").addEventListener("click", async () => {
     await supabase.auth.signOut();
