@@ -1,90 +1,71 @@
-import { supabase } from "./supabaseClient.js";
+// dashboard.js
+import { supabase } from './supabaseClient.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const access_token = localStorage.getItem("sb-access-token");
+  const refresh_token = localStorage.getItem("sb-refresh-token");
 
-  if (!session) {
-    console.warn("No session found. Redirecting...");
-    return redirectToLogin();
+  if (!access_token || !refresh_token) {
+    redirectToLogin();
+    return;
   }
 
-  // 🟢 Keep tokens up to date
-  await refreshTokenIfNeeded();
-
-  // 🟢 Auth state listener
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    console.log("🔄 Auth state changed:", event, session);
-    if (!session) {
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log("Auth state changed:", event, session);
+    if (event === 'SIGNED_OUT' || !session) {
       localStorage.clear();
-      return redirectToLogin();
+      redirectToLogin();
     }
-
-    // Refresh tokens in storage
-    localStorage.setItem("sb-access-token", session.access_token);
-    localStorage.setItem("sb-refresh-token", session.refresh_token);
   });
 
-  document.getElementById("logoutBtn").addEventListener("click", async () => {
-    await supabase.auth.signOut();
-    localStorage.clear();
+  const { data, error } = await supabase.auth.setSession({
+    access_token,
+    refresh_token
+  });
+
+  if (error || !data.session) {
+    console.error("Session restore failed:", error);
     redirectToLogin();
-  });
+    return;
+  }
 
-  // ✅ Load dashboard
-  loadDashboard();
+  const { session } = data;
+  localStorage.setItem("sb-access-token", session.access_token);
+  localStorage.setItem("sb-refresh-token", session.refresh_token);
+
+  loadDashboard(session.access_token, session.user);
+  document.getElementById("logoutBtn").addEventListener("click", onLogout);
 });
 
 function redirectToLogin() {
   window.location.href = "index.html";
 }
 
-async function refreshTokenIfNeeded() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) {
-    const { access_token, refresh_token } = session;
-    localStorage.setItem("sb-access-token", access_token);
-    localStorage.setItem("sb-refresh-token", refresh_token);
-  }
+async function onLogout() {
+  await supabase.auth.signOut();
+  localStorage.clear();
+  redirectToLogin();
 }
 
-async function loadDashboard() {
-  const token = localStorage.getItem("sb-access-token");
-
+async function loadDashboard(token, user) {
+  document.getElementById("message").innerText = `Welcome, ${user.email}`;
   try {
     const res = await fetch("https://ecomops-sarar20225.onrender.com/protected", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` }
     });
-
     if (!res.ok) throw new Error("Unauthorized");
-
-    const data = await res.json();
-    document.getElementById("message").innerText = `Welcome! ${data.user[0]?.email ?? 'user'}`;
-
-    // Load uploads
-    const fileRes = await fetch("https://ecomops-sarar20225.onrender.com/uploads/list", {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+    const uploadsRes = await fetch("https://ecomops-sarar20225.onrender.com/uploads/list", {
+      headers: { Authorization: `Bearer ${token}` }
     });
-
-    const uploads = await fileRes.json();
+    const uploads = await uploadsRes.json();
     const list = document.getElementById("fileList");
-    list.innerHTML = ""; // clear before reloading
-    uploads.forEach(upload => {
-      const item = document.createElement("li");
-      item.innerHTML = `
-        <strong>${upload.website}</strong> - ${upload.report_type} (${upload.duration}) 
-        <a href="${upload.file_url}" target="_blank">View</a>
-      `;
-      list.appendChild(item);
+    uploads.forEach(u => {
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${u.website}</strong> – ${u.report_type} (${u.duration}) – <a href="${u.file_url}" target="_blank">View</a>`;
+      list.appendChild(li);
     });
-
   } catch (err) {
-    console.error("❌ Error loading dashboard:", err.message);
     alert("Access denied. Please login again.");
-    localStorage.clear();
-    redirectToLogin();
+    onLogout();
   }
 }
