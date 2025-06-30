@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const refresh_token = localStorage.getItem("sb-refresh-token");
 
   if (!access_token || !refresh_token) {
+    console.warn("No tokens found, redirecting to login...");
     redirectToLogin();
     return;
   }
