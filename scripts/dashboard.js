@@ -9,6 +9,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     redirectToLogin();
     return;
   }
+  supabase.auth.onAuthStateChange((event, session) => {
+  console.log("Auth event:", event, session);
+  if (!session) {
+    // User signed out or session expired
+    localStorage.clear();
+    window.location.href = "index.html";
+  }
+});
 
   // ✅ Refresh session to keep access_token valid
   const { data: sessionData, error } = await supabase.auth.setSession({
