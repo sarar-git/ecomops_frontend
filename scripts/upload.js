@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const existing = await checkRes.json();
         if (existing.duplicate) {
           const confirmOverwrite = confirm(
-            `A report already exists:\n\n📄 File ID: ${existing.id}\n🕒 Uploaded: ${existing.uploaded_at}\n\nDo you want to replace it?`
+            `A report already exists:\n\n📄 File ID: ${existing.upload_id}\n🕒 Uploaded: ${existing.uploaded_at}\n\nDo you want to replace it?`
           );
           if (!confirmOverwrite)
           {
