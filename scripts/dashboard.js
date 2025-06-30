@@ -9,35 +9,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     redirectToLogin();
     return;
   }
-  supabase.auth.onAuthStateChange((event, session) => {
-  console.log("Auth event:", event, session);
-  if (!session) {
-    // User signed out or session expired
-    localStorage.clear();
-    window.location.href = "index.html";
-  }
-});
 
-  // ✅ Refresh session to keep access_token valid
+  // ✅ Monitor auth changes
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log("Auth event:", event, session);
+    if (!session) {
+      localStorage.clear();
+      redirectToLogin();
+    }
+  });
+
+  // ✅ Refresh session
   const { data: sessionData, error } = await supabase.auth.setSession({
     access_token,
     refresh_token
   });
 
   if (error || !sessionData.session) {
-    console.error("Session refresh failed:", error?.message);
+    console.error("Session restoration failed:", error?.message);
     redirectToLogin();
     return;
   }
 
-  const newAccessToken = sessionData.session.access_token;
-  const user = sessionData.session.user;
+  // ✅ Store fresh tokens
+  localStorage.setItem("sb-access-token", sessionData.session.access_token);
+  localStorage.setItem("sb-refresh-token", sessionData.session.refresh_token);
 
-  // ✅ Store refreshed token (optional but recommended)
-  localStorage.setItem("sb-access-token", newAccessToken);
-
-  // ✅ Load protected data
-  loadDashboard(newAccessToken, user);
+  // ✅ Load dashboard data
+  loadDashboard(sessionData.session.access_token, sessionData.session.user);
 
   // ✅ Setup logout
   document.getElementById("logoutBtn").addEventListener("click", async () => {
@@ -52,10 +51,8 @@ function redirectToLogin() {
 }
 
 async function loadDashboard(token, user) {
-  // ✅ Show user email
   document.getElementById("message").innerText = `Welcome! ${user.email}`;
 
-  // 🔐 Fetch from protected backend
   try {
     const res = await fetch("https://ecomops-sarar20225.onrender.com/protected", {
       headers: {
@@ -68,7 +65,6 @@ async function loadDashboard(token, user) {
     const userData = await res.json();
     console.log("✅ Authenticated user:", userData);
 
-    // 🧾 Load uploaded files
     const fileRes = await fetch("https://ecomops-sarar20225.onrender.com/uploads/list", {
       headers: {
         Authorization: `Bearer ${token}`
