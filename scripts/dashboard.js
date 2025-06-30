@@ -1,70 +1,35 @@
+// dashboard.js
 import { supabase } from './supabaseClient.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // ✅ Step 1: Try to get an existing session (persistent via cookies or memory)
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
+  const { data: { session }, error } = await supabase.auth.getSession();
 
-  if (session) {
-    // Session is already valid, use it
-    console.log("✅ Existing session found.");
-    localStorage.setItem("sb-access-token", session.access_token);
-    localStorage.setItem("sb-refresh-token", session.refresh_token);
-    loadDashboard(session.access_token, session.user);
-  } else {
-    // No session found, try restoring it using saved tokens
-    const access_token = localStorage.getItem("sb-access-token");
-    const refresh_token = localStorage.getItem("sb-refresh-token");
-
-    if (!access_token || !refresh_token) {
-      console.warn("No tokens found, redirecting to login...");
-      return redirectToLogin();
-    }
-
-    // ✅ Try to restore session
-    const { data: sessionData, error: restoreError } = await supabase.auth.setSession({
-      access_token,
-      refresh_token
-    });
-
-    if (restoreError || !sessionData.session) {
-      console.error("❌ Session restoration failed:", restoreError?.message);
-      return redirectToLogin();
-    }
-
-    // ✅ Save refreshed tokens and continue
-    localStorage.setItem("sb-access-token", sessionData.session.access_token);
-    localStorage.setItem("sb-refresh-token", sessionData.session.refresh_token);
-    loadDashboard(sessionData.session.access_token, sessionData.session.user);
+  if (error || !session) {
+    console.warn("❌ No active session found.");
+    redirectToLogin();
+    return;
   }
 
-  // ✅ Monitor auth state changes
-  supabase.auth.onAuthStateChange((event, newSession) => {
-    console.log("🔄 Auth state changed:", event, newSession);
-
-    if (!newSession) {
-      // User signed out or session expired
-      localStorage.clear();
+  // ✅ Listen for auth state changes
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log("🔄 Auth state changed:", event, session);
+    if (!session) {
       redirectToLogin();
-    } else {
-      // Save new tokens
-      localStorage.setItem("sb-access-token", newSession.access_token);
-      localStorage.setItem("sb-refresh-token", newSession.refresh_token);
     }
   });
 
-  // ✅ Setup logout
+  // ✅ Load dashboard
+  loadDashboard(session.access_token, session.user);
+
+  // ✅ Logout
   document.getElementById("logoutBtn").addEventListener("click", async () => {
     await supabase.auth.signOut();
-    localStorage.clear();
     redirectToLogin();
   });
 });
 
 function redirectToLogin() {
-  window.location.href = "index.html";
+  window.location.href = "index.html"; // or login.html depending on your structure
 }
 
 async function loadDashboard(token, user) {
@@ -83,9 +48,7 @@ async function loadDashboard(token, user) {
     console.log("✅ Authenticated user:", userData);
 
     const fileRes = await fetch("https://ecomops-sarar20225.onrender.com/uploads/list", {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      headers: { Authorization: `Bearer ${token}` }
     });
 
     const uploads = await fileRes.json();
@@ -101,7 +64,6 @@ async function loadDashboard(token, user) {
 
   } catch (err) {
     alert("Access denied. Please login again.");
-    localStorage.clear();
     redirectToLogin();
   }
 }
