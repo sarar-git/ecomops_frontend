@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (checkRes.ok) {
         console.log("🧾 Duplicate check response status:", checkRes.status);
         const existing = await checkRes.json();
-        if (existing.exists) {
+        if (existing.duplicate) {
           const confirmOverwrite = confirm(
             `A report already exists:\n\n📄 File ID: ${existing.id}\n🕒 Uploaded: ${existing.uploaded_at}\n\nDo you want to replace it?`
           );
