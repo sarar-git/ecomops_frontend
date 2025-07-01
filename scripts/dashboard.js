@@ -19,9 +19,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Optionally listen for session changes (optional)
   supabase.auth.onAuthStateChange((event, newSession) => {
   console.log("🔄 Auth event:", event, newSession);
-  if (!newSession) {
+  if (event === "SIGNED_OUT" || !newSession) {
     console.warn("⚠️ Session ended, redirecting to login...");
     redirectToLogin();
+  } else if (event === "TOKEN_REFRESHED") {
+    console.log("🔄 Token was refreshed successfully.");
   }
 });
   loadDashboard(session.access_token, session.user);
