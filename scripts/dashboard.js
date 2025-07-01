@@ -13,6 +13,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     redirectToLogin();
     return;
   }
+  // ✅ STORE TOKENS IN LOCAL STORAGE
+  localStorage.setItem("sb-access-token", session.access_token);
+  localStorage.setItem("sb-refresh-token", session.refresh_token);
 
   console.log("✅ Session found:", session);
 
@@ -24,6 +27,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     redirectToLogin();
   } else if (event === "TOKEN_REFRESHED") {
     console.log("🔄 Token was refreshed successfully.");
+    localStorage.setItem("sb-access-token", newSession.access_token);
+    localStorage.setItem("sb-refresh-token", newSession.refresh_token);
   }
 });
   loadDashboard(session.access_token, session.user);
@@ -48,7 +53,7 @@ async function loadDashboard(token, user) {
     console.log("🚨 Protected route status:", res.status); // 🔍 ADD THIS LINE
     if (!res.ok) throw new Error("Unauthorized");
 
-    const uploadsRes = await fetch("https://ecomops-sarar20225.onrender.com/uploads/list", {
+    const uploadsRes = await fetch("https://ecomops-sarar20225.onrender.com/uploads/list/", {
       headers: { Authorization: `Bearer ${token}` }
     });
 
