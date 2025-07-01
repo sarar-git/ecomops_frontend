@@ -5,6 +5,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log("📦 Checking current session...");
 
   const { data: { session }, error } = await supabase.auth.getSession();
+  
+  console.log("🔑 Current session:", session);
 
   if (error || !session) {
     console.error("❌ No session found or error:", error);
@@ -16,12 +18,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Optionally listen for session changes (optional)
   supabase.auth.onAuthStateChange((event, newSession) => {
-    console.log("🔄 Auth event:", event, newSession);
-    if (event === "SIGNED_OUT" || !newSession) {
-      redirectToLogin();
-    }
-  });
-
+  console.log("🔄 Auth event:", event, newSession);
+  if (!newSession) {
+    console.warn("⚠️ Session ended, redirecting to login...");
+    redirectToLogin();
+  }
+});
   loadDashboard(session.access_token, session.user);
   document.getElementById("logoutBtn").addEventListener("click", onLogout);
 });
