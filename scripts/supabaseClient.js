@@ -7,7 +7,7 @@ export const supabase = createClient(
     auth: {
       persistSession: true,         // ✅ Keep session after page reloads
       autoRefreshToken: true,       // ✅ Refresh access token automatically
-      detectSessionInUrl: false     // ✅ Skip URL token handling (for SPA)
+      detectSessionInUrl: true     // ✅ Skip URL token handling (for SPA)
     }
   }
 );
