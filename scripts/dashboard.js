@@ -42,7 +42,7 @@ async function onLogout() {
 async function loadDashboard(token, user) {
   document.getElementById("message").innerText = `Welcome, ${user.email}`;
   try {
-    const res = await fetch("https://ecomops-sarar20225.onrender.com/protected", {
+    const res = await fetch("https://ecomops-sarar20225.onrender.com/protected/", {
       headers: { Authorization: `Bearer ${token}` }
     });
     console.log("🚨 Protected route status:", res.status); // 🔍 ADD THIS LINE
