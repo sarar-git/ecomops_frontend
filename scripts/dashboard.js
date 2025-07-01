@@ -45,6 +45,7 @@ async function loadDashboard(token, user) {
     const res = await fetch("https://ecomops-sarar20225.onrender.com/protected", {
       headers: { Authorization: `Bearer ${token}` }
     });
+    console.log("🚨 Protected route status:", res.status); // 🔍 ADD THIS LINE
     if (!res.ok) throw new Error("Unauthorized");
 
     const uploadsRes = await fetch("https://ecomops-sarar20225.onrender.com/uploads/list", {
