@@ -3,39 +3,47 @@ import { supabase } from "./supabaseClient.js";
 const apiBase = "https://ecomops-sarar20225.onrender.com/uploads";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("Upload page DOM loaded");
+  console.log("📦 Upload page loaded");
 
   const token = localStorage.getItem("sb-access-token");
   const refresh = localStorage.getItem("sb-refresh-token");
 
   if (!token || !refresh) {
-    console.warn("No tokens found, redirecting to login...");
+    console.warn("❌ No tokens found in localStorage. Redirecting...");
     window.location.href = "index.html";
     return;
   }
 
-  const { data, error } = await supabase.auth.setSession({
+  const { data: sessionData, error } = await supabase.auth.setSession({
     access_token: token,
     refresh_token: refresh,
   });
 
-  if (error) {
-    console.error("Session refresh error:", error.message);
+  if (error || !sessionData || !sessionData.session) {
+    console.error("❌ Error restoring session:", error?.message);
     localStorage.clear();
     window.location.href = "index.html";
     return;
   }
 
-  // Save updated tokens (important for backend access)
-  localStorage.setItem("sb-access-token", data.session.access_token);
-  localStorage.setItem("sb-refresh-token", data.session.refresh_token);
+  console.log("✅ Session restored:", sessionData.session);
+  localStorage.setItem("sb-access-token", sessionData.session.access_token);
+  localStorage.setItem("sb-refresh-token", sessionData.session.refresh_token);
 
-  const sessionToken = data.session.access_token;
-  // ✅ Now all DOM and tokens are ready – set up event handlers below
+  // 🔄 Watch for logout / token expiry
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log("🔄 Auth event:", event, session);
+    if (event === "SIGNED_OUT" || !session) {
+      console.warn("🔒 Session ended or invalid. Redirecting...");
+      localStorage.clear();
+      window.location.href = "index.html";
+    }
+  });
+
+  // Form and button setup
   const form = document.getElementById("uploadForm");
   const statusDiv = document.getElementById("status");
 
-  // Setup button groups
   const setupButtonGroup = (groupId, hiddenFieldName) => {
     const group = document.getElementById(groupId);
     const buttons = group.querySelectorAll("button");
@@ -54,10 +62,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupButtonGroup("websiteButtons", "website");
   setupButtonGroup("reportButtons", "report_type");
 
-  // Handle form submission
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    console.log("Upload form submitted");
+    statusDiv.innerText = "";
+    console.log("📨 Form submitted");
 
     const formData = new FormData(form);
     const website = formData.get("website");
@@ -67,66 +75,58 @@ document.addEventListener("DOMContentLoaded", async () => {
     const file = formData.get("file");
 
     if (!website || !report_type || !start_date || !end_date || !file) {
-      console.log("❌ Missing field(s):", { website, report_type, start_date, end_date, file });
+      console.warn("⚠️ Missing field(s)");
       statusDiv.innerText = "❗ Please fill all fields and select a file.";
       return;
     }
 
     const duration = `${start_date} to ${end_date}`;
-    console.log("🔍 Checking for duplicate report with:", { website, report_type, duration });
+    console.log("🔍 Checking for duplicates:", { website, report_type, duration });
 
     try {
+      const freshSession = await supabase.auth.getSession();
+      const freshToken = freshSession.data?.session?.access_token;
+
+      if (!freshToken) {
+        throw new Error("No valid access token found.");
+      }
+
       const checkRes = await fetch(
         `${apiBase}/check-duplicate?website=${encodeURIComponent(website)}&report_type=${encodeURIComponent(report_type)}&duration=${encodeURIComponent(duration)}`,
         {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${freshToken}`,
           },
         }
       );
 
       if (checkRes.ok) {
-        console.log("🧾 Duplicate check response status:", checkRes.status);
         const existing = await checkRes.json();
         if (existing.duplicate) {
           const confirmOverwrite = confirm(
-            `A report already exists:\n\n📄 File ID: ${existing.upload_id}\n🕒 Uploaded: ${existing.uploaded_at}\n\nDo you want to replace it?`
+            `A report already exists:\n📄 ID: ${existing.upload_id}\n🕒 Uploaded: ${existing.uploaded_at}\n\nDo you want to replace it?`
           );
-          if (!confirmOverwrite)
-          {
-            console.log("⛔ Upload canceled by user.");
+          if (!confirmOverwrite) {
+            console.log("⛔ Upload cancelled by user.");
             return;
           }
         }
+      } else {
+        console.warn("⚠️ Duplicate check failed with status:", checkRes.status);
       }
-    } catch (err) {
-      console.error("Error checking duplicates:", err);
-      statusDiv.innerText = "⚠️ Failed to check for duplicates.";
-      return;
-    }
-     console.log("📤 Proceeding to upload file...");
-    const uploadData = new FormData();
-    uploadData.append("website", website);
-    uploadData.append("report_type", report_type);
-    uploadData.append("duration", duration);
-    uploadData.append("file", file);
 
-    const { data: freshSession, error } = await supabase.auth.getSession();
-    if (error || !freshSession || !freshSession.session) {
-      console.error("❌ Could not get fresh session:", error || "No session found");
-      localStorage.clear();
-      window.location.href = "index.html";
-      return;
-    }  
-    const freshToken = freshSession?.session?.access_token;
-    console.log("🆕 Using fresh token:", freshToken);
-    
-    try {
+      console.log("📤 Uploading file...");
+      const uploadData = new FormData();
+      uploadData.append("website", website);
+      uploadData.append("report_type", report_type);
+      uploadData.append("duration", duration);
+      uploadData.append("file", file);
+
       const uploadRes = await fetch(`${apiBase}/upload`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${freshToken}`,
         },
         body: uploadData,
       });
@@ -141,7 +141,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         statusDiv.innerText = `❌ Upload failed: ${result.detail || "Unknown error"}`;
       }
     } catch (err) {
-      console.error("Upload failed:", err);
+      console.error("🚨 Upload failed:", err);
       statusDiv.innerText = "❌ Upload failed. Please try again later.";
     }
   });
