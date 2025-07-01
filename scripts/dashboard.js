@@ -5,18 +5,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   const access_token = localStorage.getItem("sb-access-token");
   const refresh_token = localStorage.getItem("sb-refresh-token");
 
+  console.log("⚙️ Starting session restore:", { access_token, refresh_token });
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log("🔄 Auth event:", event, session);
+});
+
   if (!access_token || !refresh_token) {
     redirectToLogin();
     return;
   }
 
-  supabase.auth.onAuthStateChange((event, session) => {
-    console.log("Auth state changed:", event, session);
-    if (event === 'SIGNED_OUT' || !session) {
-      localStorage.clear();
-      redirectToLogin();
-    }
-  });
+  //supabase.auth.onAuthStateChange((event, session) => {
+    //console.log("Auth state changed:", event, session);
+    //if (event === 'SIGNED_OUT' || !session) {
+      //localStorage.clear();
+      //redirectToLogin();
+    //}
+  //});
 
   const { data, error } = await supabase.auth.setSession({
     access_token,
