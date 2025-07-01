@@ -2,41 +2,25 @@
 import { supabase } from './supabaseClient.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const access_token = localStorage.getItem("sb-access-token");
-  const refresh_token = localStorage.getItem("sb-refresh-token");
+  console.log("📦 Checking current session...");
 
-  console.log("⚙️ Starting session restore:", { access_token, refresh_token });
-supabase.auth.onAuthStateChange((event, session) => {
-  console.log("🔄 Auth event:", event, session);
-});
+  const { data: { session }, error } = await supabase.auth.getSession();
 
-  if (!access_token || !refresh_token) {
+  if (error || !session) {
+    console.error("❌ No session found or error:", error);
     redirectToLogin();
     return;
   }
 
-  //supabase.auth.onAuthStateChange((event, session) => {
-    //console.log("Auth state changed:", event, session);
-    //if (event === 'SIGNED_OUT' || !session) {
-      //localStorage.clear();
-      //redirectToLogin();
-    //}
-  //});
+  console.log("✅ Session found:", session);
 
-  const { data, error } = await supabase.auth.setSession({
-    access_token,
-    refresh_token
+  // Optionally listen for session changes (optional)
+  supabase.auth.onAuthStateChange((event, newSession) => {
+    console.log("🔄 Auth event:", event, newSession);
+    if (event === "SIGNED_OUT" || !newSession) {
+      redirectToLogin();
+    }
   });
-
-  if (error || !data.session) {
-    console.error("Session restore failed:", error);
-    redirectToLogin();
-    return;
-  }
-
-  const { session } = data;
-  localStorage.setItem("sb-access-token", session.access_token);
-  localStorage.setItem("sb-refresh-token", session.refresh_token);
 
   loadDashboard(session.access_token, session.user);
   document.getElementById("logoutBtn").addEventListener("click", onLogout);
@@ -48,7 +32,6 @@ function redirectToLogin() {
 
 async function onLogout() {
   await supabase.auth.signOut();
-  localStorage.clear();
   redirectToLogin();
 }
 
@@ -59,9 +42,11 @@ async function loadDashboard(token, user) {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (!res.ok) throw new Error("Unauthorized");
+
     const uploadsRes = await fetch("https://ecomops-sarar20225.onrender.com/uploads/list", {
       headers: { Authorization: `Bearer ${token}` }
     });
+
     const uploads = await uploadsRes.json();
     const list = document.getElementById("fileList");
     uploads.forEach(u => {
@@ -70,6 +55,7 @@ async function loadDashboard(token, user) {
       list.appendChild(li);
     });
   } catch (err) {
+    console.error("⚠️ Error loading dashboard:", err);
     alert("Access denied. Please login again.");
     onLogout();
   }
