@@ -115,10 +115,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             Authorization: `Bearer ${freshToken}`,          },
         }
       );
-      for (const pair of uploadData.entries()) {
-              console.log(`📦 Sending field: ${pair[0]} = ${pair[1]}`);
-            }
-
       if (checkRes.ok) {
         const existing = await checkRes.json();
         if (existing.duplicate) {
@@ -141,6 +137,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       uploadData.append("duration", duration);
       uploadData.append("file", file);
       uploadData.append("payment_type", payment_type);
+
+      for (const pair of uploadData.entries()) {
+              console.log(`📦 Sending field: ${pair[0]} = ${pair[1]}`);
+            }
+
 
       const uploadRes = await fetch(`${apiBase}/upload`, {
         method: "POST",
