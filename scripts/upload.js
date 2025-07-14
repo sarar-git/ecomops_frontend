@@ -107,19 +107,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!freshToken) {
         throw new Error("No valid access token found.");
       }
-
       const checkRes = await fetch(
         `${apiBase}/check-duplicate?website=${encodeURIComponent(website)}&report_type=${encodeURIComponent(report_type)}&duration=${encodeURIComponent(duration)}`,
         {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${freshToken}`,
-            for (const pair of uploadData.entries()) {
-              console.log(`📦 Sending field: ${pair[0]} = ${pair[1]}`);
-            }
-          },
+            Authorization: `Bearer ${freshToken}`,          },
         }
       );
+      for (const pair of uploadData.entries()) {
+              console.log(`📦 Sending field: ${pair[0]} = ${pair[1]}`);
+            }
 
       if (checkRes.ok) {
         const existing = await checkRes.json();
