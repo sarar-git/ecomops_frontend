@@ -55,6 +55,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         btn.classList.add("active");
         hiddenInput.value = btn.dataset.value;
         console.log(`${hiddenFieldName} selected: ${btn.dataset.value}`);
+         // Check if both Amazon and Payment Report are selected
+        const website = form.querySelector(`input[name="website"]`).value;
+        const reportType = form.querySelector(`input[name="report_type"]`).value;
+        const codToggle = document.getElementById("codToggleWrapper");
+  
+        if (website === "Amazon" && reportType === "Payment Report") {
+          codToggle.style.display = "block";
+        } else {
+          codToggle.style.display = "none";
+          form.querySelector('input[name="payment_type"]').value = "";
+          const codButtons = document.querySelectorAll("#codButtons button");
+          codButtons.forEach((b) => b.classList.remove("active")); // clear selection
+        }
+
       });
     });
   };
