@@ -88,6 +88,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const start_date = formData.get("start_date");
     const end_date = formData.get("end_date");
     const file = formData.get("file");
+    const payment_type = formData.get("payment_type");
+    
 
     if (!website || !report_type || !start_date || !end_date || !file) {
       console.warn("⚠️ Missing field(s)");
@@ -137,6 +139,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       uploadData.append("report_type", report_type);
       uploadData.append("duration", duration);
       uploadData.append("file", file);
+      uploadData.append("payment_type", payment_type);
 
       const uploadRes = await fetch(`${apiBase}/upload`, {
         method: "POST",
