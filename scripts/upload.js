@@ -75,6 +75,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   setupButtonGroup("websiteButtons", "website");
   setupButtonGroup("reportButtons", "report_type");
+  setupButtonGroup("codButtons", "payment_type");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
