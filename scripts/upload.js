@@ -114,6 +114,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           method: "GET",
           headers: {
             Authorization: `Bearer ${freshToken}`,
+            for (let [key, value] of uploadData.entries()) {
+              console.log(`📦 Sending field: ${key} = ${value}`);
+            }
+
           },
         }
       );
