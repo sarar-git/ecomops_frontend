@@ -44,6 +44,16 @@
     </div>
     <input type="hidden" name="report_type" required><br /><br />
 
+    <!-- Payment Type (COD / NCOD) -->
+    <div id="codToggleWrapper" style="display: none;">
+      <label>Payment Type:</label><br />
+    <div id="codButtons" class="btn-group">
+      <button type="button" data-value="COD">COD</button>
+      <button type="button" data-value="NCOD">NCOD</button>
+    </div>
+      <input type="hidden" name="payment_type" id="paymentType"><br /><br />
+    </div>
+
     <!-- Duration -->
     <label>Start Date:</label>
     <input type="date" name="start_date" required><br /><br />
