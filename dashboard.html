@@ -10,6 +10,37 @@
   <button id="logoutBtn">Logout</button>
   
   <a href="upload.html" class="btn">Upload The Reports</a>
+  <div id="order-summary" style="display: flex; gap: 1rem; margin-top: 1rem;">
+  <div class="card" id="shipped-card"></div>
+  <div class="card" id="cancelled-card"></div>
+  <div class="card" id="returned-card"></div>
+  </div>
+
+  <div id="payment-summary" style="display: flex; gap: 1rem; margin-top: 1rem;">
+    <div class="card" id="paid-card"></div>
+    <div class="card" id="charges-card"></div>
+    <div class="card" id="outstanding-card"></div>
+  </div>
+  
+  <style>
+    .card {
+      flex: 1;
+      padding: 1rem;
+      background: #f9f9f9;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+  
+    .card h3 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+  
+    .card p {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+  </style>
 
   <h3>Your Uploaded Reports</h3>
   <ul id="fileList"></ul>
