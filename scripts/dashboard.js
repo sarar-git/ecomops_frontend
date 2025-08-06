@@ -135,7 +135,7 @@ async function loadSummaryCards() {
 
   const { data: jiomartPay, error: jpError } = await supabase
     // change this to jiomart_payment_Statements after creating a table for payments and making logic corrections in the back end
-    .from('jiomart_unmatched_payments')
+    .from('jiomart_unmatched_payment')
     .select('net_amount');
 
   if (jpError) {
