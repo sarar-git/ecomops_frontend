@@ -5,14 +5,20 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+  <!-- Upload Tab Button -->
+  <a href="upload.html" class="upload-tab" title="Upload Reports">⬆️</a>
+
   <header>
     <h2>Dashboard</h2>
-    <div id="message"></div>
-    <button id="logoutBtn">Logout</button>
+    <div class="header-right">
+      <div id="message"></div>
+      <button id="logoutBtn">Logout</button>
+    </div>
   </header>
+
   <div class="container">
-  
-  <!-- Summary Cards -->
+    <!-- Summary Cards -->
     <div class="card-row">
       <div id="shipped-card" class="card"></div>
       <div id="cancelled-card" class="card"></div>
@@ -30,9 +36,4 @@
 
   <script src="scripts/dashboard.js" type="module"></script>
 </body>
-<!-- Upload Tab Button -->
-<a href="upload.html" class="upload-tab" title="Upload Reports">
-  ⬆️
-</a>
-
 </html>
