@@ -52,11 +52,24 @@ async function loadDashboard(token, user) {
     });
     console.log("🚨 Protected route status:", res.status); // 🔍 ADD THIS LINE
     if (!res.ok) throw new Error("Unauthorized");
-
+  } catch (err) {
+    console.error("⚠️ Error loading dashboard:", err);
+    alert("Access denied. Please login again.");
+    onLogout();
+  }
+  // Fetch and display lifetime dashboard data from function for cards
+  try {
+    await loadSummaryCards();
+  } catch (err) {
+    console.error("⚠️ Error loading summary cards:", err);
+    // You might show a fallback message on the page instead of alert
+  }
+  try {
     const uploadsRes = await fetch("https://ecomops-sarar20225.onrender.com/uploads/list/", {
       headers: { Authorization: `Bearer ${token}` }
     });
-
+    if (!uploadsRes.ok) throw new Error("Uploads fetch failed");
+    
     const uploads = await uploadsRes.json();
     const list = document.getElementById("fileList");
     uploads.forEach(u => {
@@ -64,13 +77,9 @@ async function loadDashboard(token, user) {
       li.innerHTML = `<strong>${u.website}</strong> – ${u.report_type} (${u.duration}) – <a href="${u.file_url}" target="_blank">View</a>`;
       list.appendChild(li);
     });
-    // Fetch and display lifetime dashboard data from function for cards
-    await loadSummaryCards();
-
   } catch (err) {
-    console.error("⚠️ Error loading dashboard:", err);
-    alert("Access denied. Please login again.");
-    onLogout();
+    console.error("⚠️ Error loading uploads:", err);
+    // Optionally show a message on the UI
   }
 }
 
