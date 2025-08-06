@@ -5,49 +5,30 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="header">
+  <header>
     <h2>Dashboard</h2>
     <button id="logoutBtn">Logout</button>
-  </div>
-  <div id="message"></div>
+  </header>
+  <div class="container">
+    <div id="message"></div>
   <a href="upload.html" class="btn">Upload The Reports</a>
-  <div id="order-summary" style="display: flex; gap: 1rem; margin-top: 1rem;">
-  <div class="card" id="shipped-card"></div>
-  <div class="card" id="cancelled-card"></div>
-  <div class="card" id="returned-card"></div>
+  
+  <!-- Summary Cards -->
+    <div class="card-row">
+      <div id="shipped-card" class="card"></div>
+      <div id="cancelled-card" class="card"></div>
+      <div id="returned-card" class="card"></div>
+    </div>
+
+    <div class="card-row">
+      <div id="paid-card" class="card"></div>
+      <div id="charges-card" class="card"></div>
+      <div id="outstanding-card" class="card"></div>
+    </div>
+
+    <ul id="fileList"></ul>
   </div>
 
-  <div id="payment-summary" style="display: flex; gap: 1rem; margin-top: 1rem;">
-    <div class="card" id="paid-card"></div>
-    <div class="card" id="charges-card"></div>
-    <div class="card" id="outstanding-card"></div>
-  </div>
-  
-  <style>
-    .card {
-      flex: 1;
-      padding: 1rem;
-      background: #f9f9f9;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-  
-    .card h3 {
-      margin: 0;
-      font-size: 1.2rem;
-    }
-  
-    .card p {
-      font-size: 1.5rem;
-      font-weight: bold;
-    }
-  </style>
-
-  <h3>Your Uploaded Reports</h3>
-  <ul id="fileList"></ul>
-  <a href="${upload.file_url}" target="_blank">View</a>
-
-
-  <script type="module" src="scripts/dashboard.js"></script>
+  <script src="scripts/dashboard.js" type="module"></script>
 </body>
 </html>
