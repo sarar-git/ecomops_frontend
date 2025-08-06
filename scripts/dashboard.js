@@ -90,7 +90,7 @@ async function loadSummaryCards() {
   const returned = { count: 0, value: 0 };
 
   const { data: amazonOrders, error: aoError } = await supabase
-    .from('AmazonMasterOrder')
+    .from('amazon_master_orders')
     .select('order_status, order_total_amount');
 
   if (aoError) {
@@ -99,7 +99,7 @@ async function loadSummaryCards() {
   }
 
   const { data: jiomartOrders, error: joError } = await supabase
-    .from('JiomartMasterOrder')
+    .from('jiomart_master_orders')
     .select('order_status, order_total_amount');
 
   if (joError) {
@@ -124,8 +124,8 @@ async function loadSummaryCards() {
   }
 
   const { data: amazonPay, error: apError } = await supabase
-    .from('amazon_payment_reports')
-    .select('amount');
+    .from('amazon_payment_statements')
+    .select('total_amount');
 
   if (apError) {
     console.error("❌ Error fetching Amazon payments:", apError);
@@ -133,8 +133,9 @@ async function loadSummaryCards() {
   }
 
   const { data: jiomartPay, error: jpError } = await supabase
-    .from('jiomart_payment_reports')
-    .select('amount');
+    // change this to jiomart_payment_Statements after creating a table for payments and making logic corrections in the back end
+    .from('jiomart_umatched_payments')
+    .select('net_amount');
 
   if (jpError) {
     console.error("❌ Error fetching Jiomart payments:", jpError);
