@@ -100,7 +100,7 @@ async function loadSummaryCards() {
 
   const { data: jiomartOrders, error: joError } = await supabase
     .from('jiomart_master_orders')
-    .select('order_status, order_total_amount');
+    .select('is_returned, order_total_amount');
 
   if (joError) {
     console.error("❌ Error fetching Jiomart orders:", joError);
