@@ -80,10 +80,25 @@ async function loadSummaryCards() {
   const cancelled = { count: 0, value: 0 };
   const returned = { count: 0, value: 0 };
 
-  const amazonOrders = await supabase.from('AmazonMasterOrder').select('order_status, order_total_amount');
-  const jiomartOrders = await supabase.from('JiomartMasterOrder').select('order_status, order_total_amount');
+  const { data: amazonOrders, error: aoError } = await supabase
+    .from('AmazonMasterOrder')
+    .select('order_status, order_total_amount');
 
-  const allOrders = [...amazonOrders.data, ...jiomartOrders.data];
+  if (aoError) {
+    console.error("❌ Error fetching Amazon orders:", aoError);
+    return;
+  }
+
+  const { data: jiomartOrders, error: joError } = await supabase
+    .from('JiomartMasterOrder')
+    .select('order_status, order_total_amount');
+
+  if (joError) {
+    console.error("❌ Error fetching Jiomart orders:", joError);
+    return;
+  }
+
+  const allOrders = [...amazonOrders, ...jiomartOrders];
 
   for (const order of allOrders) {
     const val = Number(order.order_total_amount) || 0;
@@ -99,15 +114,30 @@ async function loadSummaryCards() {
     }
   }
 
-  const amazonPay = await supabase.from('amazon_payment_reports').select('amount');
-  const jiomartPay = await supabase.from('jiomart_payment_reports').select('amount');
+  const { data: amazonPay, error: apError } = await supabase
+    .from('amazon_payment_reports')
+    .select('amount');
 
-  const paid = [...amazonPay.data, ...jiomartPay.data].reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+  if (apError) {
+    console.error("❌ Error fetching Amazon payments:", apError);
+    return;
+  }
 
-  const charges = 300000; // TODO: calculate dynamically later
+  const { data: jiomartPay, error: jpError } = await supabase
+    .from('jiomart_payment_reports')
+    .select('amount');
+
+  if (jpError) {
+    console.error("❌ Error fetching Jiomart payments:", jpError);
+    return;
+  }
+
+  const paid = [...amazonPay, ...jiomartPay].reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+
+  const charges = 300000; // static for now
   const outstanding = paid - charges;
 
-  // Update DOM
+  // ✅ Update UI
   document.getElementById('shipped-card').innerHTML = `
     <h3>Shipped Orders</h3><p>${shipped.count}</p><small>₹${shipped.value.toLocaleString()}</small>`;
   document.getElementById('cancelled-card').innerHTML = `
