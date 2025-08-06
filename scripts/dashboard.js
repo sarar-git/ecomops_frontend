@@ -91,7 +91,8 @@ async function loadSummaryCards() {
 
   const { data: amazonOrders, error: aoError } = await supabase
     .from('amazon_master_orders')
-    .select('is_returned, order_total_amount');
+    // change this any other column that calculates the total amount received after all deductions made for an order
+    .select('status, total_paid');
 
   if (aoError) {
     console.error("❌ Error fetching Amazon orders:", aoError);
@@ -100,7 +101,7 @@ async function loadSummaryCards() {
 
   const { data: jiomartOrders, error: joError } = await supabase
     .from('jiomart_master_orders')
-    .select('order_status, order_total_amount');
+    .select('order_status, pay_net_amount');
 
   if (joError) {
     console.error("❌ Error fetching Jiomart orders:", joError);
