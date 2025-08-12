@@ -88,12 +88,20 @@ async function loadDashboard(token, user) {
   }
 }
 
+function setCard(id, html) {
+  const el = document.getElementById(id);
+  if (!el) {
+    console.warn(`⚠️ Element #${id} not found in DOM`);
+    return;
+  }
+  el.innerHTML = html;
+}
+
 // function for cards
 async function loadSummaryCards() {
   const shipped = { count: 0, value: 0 };
   const cancelled = { count: 0, value: 0 };
-  const returned = { count: 0, value: 0 };
-
+  const returned = { count: 0, value: 0 };  
   const { data: amazonOrders, error: aoError } = await supabase
     .from('amazon_master_orders')
     .select('status, total_paid');
@@ -157,25 +165,13 @@ async function loadSummaryCards() {
   const charges = 300000; // static for now
   const outstanding = paid - charges;
 
-  // ✅ Update UI cards
-  document.getElementById('shipped-card').innerHTML = `
-    <h3>Shipped Orders</h3>
-    <p>${shipped.count}</p>
-    <small>₹${shipped.value.toLocaleString()}</small>`;
-  document.getElementById('cancelled-card').innerHTML = `
-    <h3>Cancelled Orders</h3>
-    <p>${cancelled.count}</p>
-    <small>₹${cancelled.value.toLocaleString()}</small>`;
-  document.getElementById('returned-card').innerHTML = `
-    <h3>Returned Orders</h3>
-    <p>${returned.count}</p>
-    <small>₹${returned.value.toLocaleString()}</small>`;
-  document.getElementById('paid-card').innerHTML = `
-    <h3>Total Paid</h3><p>₹${paid.toLocaleString()}</p>`;
-  document.getElementById('charges-card').innerHTML = `
-    <h3>Total Charges</h3><p>₹${charges.toLocaleString()}</p>`;
-  document.getElementById('outstanding-card').innerHTML = `
-    <h3>Outstanding</h3><p>₹${outstanding.toLocaleString()}</p>`;
+  // ✅ Use setCard instead of direct innerHTML
+  setCard('shipped-card', `<h3>Shipped Orders</h3><p>${shipped.count}</p><small>₹${shipped.value.toLocaleString()}</small>`);
+  setCard('cancelled-card', `<h3>Cancelled Orders</h3><p>${cancelled.count}</p><small>₹${cancelled.value.toLocaleString()}</small>`);
+  setCard('returned-card', `<h3>Returned Orders</h3><p>${returned.count}</p><small>₹${returned.value.toLocaleString()}</small>`);
+  setCard('paid-card', `<h3>Total Paid</h3><p>₹${paid.toLocaleString()}</p>`);
+  setCard('charges-card', `<h3>Total Charges</h3><p>₹${charges.toLocaleString()}</p>`);
+  setCard('outstanding-card', `<h3>Outstanding</h3><p>₹${outstanding.toLocaleString()}</p>`);
 
   // 📊 Website ranking data
   const websiteCounts = {
