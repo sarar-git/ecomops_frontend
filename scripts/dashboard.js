@@ -180,7 +180,9 @@ function renderWebsiteRanking(websiteCounts) {
   const sortedSites = Object.entries(websiteCounts).sort((a, b) => b[1] - a[1]);
   siteList.innerHTML = '';
 
-  const maxCount = sortedSites[0]?.[1] || 1;
+  // Get max count from all platforms
+  const maxCount = Math.max(...sortedSites.map(([_, count]) => count), 1);
+
 
   sortedSites.forEach(([site, count]) => {
     const percentage = (count / maxCount) * 100;
