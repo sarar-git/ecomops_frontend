@@ -1,11 +1,12 @@
 // dashboard.js
 import { supabase } from './supabaseClient.js';
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", initDashboard);
+
+async function initDashboard() {
   console.log("📦 Checking current session...");
 
   const { data: { session }, error } = await supabase.auth.getSession();
-  
   console.log("🔑 Current session:", session);
 
   if (error || !session) {
@@ -13,33 +14,31 @@ document.addEventListener("DOMContentLoaded", async () => {
     redirectToLogin();
     return;
   }
-  // ✅ STORE TOKENS IN LOCAL STORAGE
+
+  // Store tokens in local storage
   localStorage.setItem("sb-access-token", session.access_token);
   localStorage.setItem("sb-refresh-token", session.refresh_token);
-
   console.log("✅ Session found:", session);
 
-  // Optionally listen for session changes (optional)
+  // Listen for auth changes
   supabase.auth.onAuthStateChange((event, newSession) => {
-  console.log("🔄 Auth event:", event, newSession);
-  if (event === "SIGNED_OUT" || !newSession) {
-    console.warn("⚠️ Session ended, redirecting to login...");
-    redirectToLogin();
-  } else if (event === "TOKEN_REFRESHED") {
-    console.log("🔄 Token was refreshed successfully.");
-    localStorage.setItem("sb-access-token", newSession.access_token);
-    localStorage.setItem("sb-refresh-token", newSession.refresh_token);
-  }
-});
+    console.log("🔄 Auth event:", event, newSession);
+    if (event === "SIGNED_OUT" || !newSession) {
+      console.warn("⚠️ Session ended, redirecting to login...");
+      redirectToLogin();
+    } else if (event === "TOKEN_REFRESHED") {
+      console.log("🔄 Token refreshed.");
+      localStorage.setItem("sb-access-token", newSession.access_token);
+      localStorage.setItem("sb-refresh-token", newSession.refresh_token);
+    }
+  });
 
-// ✅ Now safe to load dashboard
-await loadDashboard(session.access_token, session.user);
-// ✅ Attach event listeners
-const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) {
-  logoutBtn.addEventListener("click", onLogout);
-  }
-});
+  await loadDashboard(session.access_token, session.user);
+
+  // Attach logout event
+  document.getElementById("logoutBtn")?.addEventListener("click", onLogout);
+}
+
 function redirectToLogin() {
   window.location.href = "index.html";
 }
@@ -51,30 +50,31 @@ async function onLogout() {
 
 async function loadDashboard(token, user) {
   document.getElementById("message").innerText = `Welcome, ${user.email}`;
+
   try {
     const res = await fetch("https://ecomops-sarar20225.onrender.com/protected/", {
       headers: { Authorization: `Bearer ${token}` }
     });
-    console.log("🚨 Protected route status:", res.status); // 🔍 ADD THIS LINE
+    console.log("🚨 Protected route status:", res.status);
     if (!res.ok) throw new Error("Unauthorized");
   } catch (err) {
     console.error("⚠️ Error loading dashboard:", err);
     alert("Access denied. Please login again.");
     onLogout();
+    return;
   }
-  // Fetch and display lifetime dashboard data from function for cards
-  try {
-    await loadSummaryCards();
-  } catch (err) {
-    console.error("⚠️ Error loading summary cards:", err);
-    // You might show a fallback message on the page instead of alert
-  }
+
+  await loadSummaryCards();
+  await loadUploads(token);
+}
+
+async function loadUploads(token) {
   try {
     const uploadsRes = await fetch("https://ecomops-sarar20225.onrender.com/uploads/list/", {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (!uploadsRes.ok) throw new Error("Uploads fetch failed");
-    
+
     const uploads = await uploadsRes.json();
     const list = document.getElementById("fileList");
     uploads.forEach(u => {
@@ -84,88 +84,61 @@ async function loadDashboard(token, user) {
     });
   } catch (err) {
     console.error("⚠️ Error loading uploads:", err);
-    // Optionally show a message on the UI
   }
 }
 
 function setCard(id, html) {
   const el = document.getElementById(id);
   if (!el) {
-    console.warn(`⚠️ Element #${id} not found in DOM`);
+    console.warn(`⚠️ Element #${id} not found`);
     return;
   }
   el.innerHTML = html;
 }
 
-// function for cards
 async function loadSummaryCards() {
   const shipped = { count: 0, value: 0 };
   const cancelled = { count: 0, value: 0 };
-  const returned = { count: 0, value: 0 };  
+  const returned = { count: 0, value: 0 };
+
   const { data: amazonOrders, error: aoError } = await supabase
     .from('amazon_master_orders')
     .select('status, total_paid');
-
-  if (aoError) {
-    console.error("❌ Error fetching Amazon orders:", aoError);
-    return;
-  }
+  if (aoError) return console.error("❌ Error fetching Amazon orders:", aoError);
 
   const { data: jiomartOrders, error: joError } = await supabase
     .from('jiomart_master_orders')
     .select('order_status, pay_net_amount');
+  if (joError) return console.error("❌ Error fetching Jiomart orders:", joError);
 
-  if (joError) {
-    console.error("❌ Error fetching Jiomart orders:", joError);
-    return;
-  }
+  // Merge orders and compute counts
+  [...amazonOrders.map(o => ({ status: o.status, value: +o.total_paid || 0 })),
+   ...jiomartOrders.map(o => ({ status: o.order_status, value: +o.pay_net_amount || 0 }))
+  ].forEach(order => {
+    if (order.status === 'SHIPPED') { shipped.count++; shipped.value += order.value; }
+    else if (order.status === 'CANCELLED') { cancelled.count++; cancelled.value += order.value; }
+    else if (order.status === 'RETURNED') { returned.count++; returned.value += order.value; }
+  });
 
-  // Combine for status calculations
-  const allOrders = [
-    ...amazonOrders.map(o => ({ status: o.status, value: Number(o.total_paid) || 0 })),
-    ...jiomartOrders.map(o => ({ status: o.order_status, value: Number(o.pay_net_amount) || 0 }))
-  ];
-
-  for (const order of allOrders) {
-    if (order.status === 'SHIPPED') {
-      shipped.count++;
-      shipped.value += order.value;
-    } else if (order.status === 'CANCELLED') {
-      cancelled.count++;
-      cancelled.value += order.value;
-    } else if (order.status === 'RETURNED') {
-      returned.count++;
-      returned.value += order.value;
-    }
-  }
-
+  // Payments
   const { data: amazonPay, error: apError } = await supabase
     .from('amazon_payment_statements')
     .select('total_amount');
-
-  if (apError) {
-    console.error("❌ Error fetching Amazon payments:", apError);
-    return;
-  }
+  if (apError) return console.error("❌ Error fetching Amazon payments:", apError);
 
   const { data: jiomartPay, error: jpError } = await supabase
-    .from('jiomart_unmatched_payment') // change later to jiomart_payment_statements
+    .from('jiomart_unmatched_payment') // TODO: Change when ready
     .select('net_amount');
+  if (jpError) return console.error("❌ Error fetching Jiomart payments:", jpError);
 
-  if (jpError) {
-    console.error("❌ Error fetching Jiomart payments:", jpError);
-    return;
-  }
+  const paid = [...amazonPay.map(r => +r.total_amount || 0),
+                ...jiomartPay.map(r => +r.net_amount || 0)]
+                .reduce((sum, val) => sum + val, 0);
 
-  const paid = [
-    ...amazonPay.map(r => Number(r.total_amount) || 0),
-    ...jiomartPay.map(r => Number(r.net_amount) || 0)
-  ].reduce((sum, val) => sum + val, 0);
-
-  const charges = 300000; // static for now
+  const charges = 300000; // static placeholder
   const outstanding = paid - charges;
 
-  // ✅ Use setCard instead of direct innerHTML
+  // Render cards
   setCard('shipped-card', `<h3>Shipped Orders</h3><p>${shipped.count}</p><small>₹${shipped.value.toLocaleString()}</small>`);
   setCard('cancelled-card', `<h3>Cancelled Orders</h3><p>${cancelled.count}</p><small>₹${cancelled.value.toLocaleString()}</small>`);
   setCard('returned-card', `<h3>Returned Orders</h3><p>${returned.count}</p><small>₹${returned.value.toLocaleString()}</small>`);
@@ -173,23 +146,23 @@ async function loadSummaryCards() {
   setCard('charges-card', `<h3>Total Charges</h3><p>₹${charges.toLocaleString()}</p>`);
   setCard('outstanding-card', `<h3>Outstanding</h3><p>₹${outstanding.toLocaleString()}</p>`);
 
- // 📊 Website ranking data
-const websiteCounts = {
-  Amazon: amazonOrders.length,
-  Jiomart: jiomartOrders.length
-};
+  // Website ranking
+  renderWebsiteRanking({
+    Amazon: amazonOrders.length,
+    Jiomart: jiomartOrders.length
+  });
+}
 
-// Sort by order count (descending)
-const sortedSites = Object.entries(websiteCounts)
-  .sort((a, b) => b[1] - a[1]);
+function renderWebsiteRanking(websiteCounts) {
+  const sortedSites = Object.entries(websiteCounts).sort((a, b) => b[1] - a[1]);
+  const siteList = document.getElementById('site-ranking');
 
-// Find container element
-const siteList = document.getElementById('site-ranking');
+  if (!siteList) {
+    console.warn("⚠️ #site-ranking element not found. Skipping site ranking render.");
+    return;
+  }
 
-if (!siteList) {
-  console.warn("⚠️ #site-ranking element not found in DOM. Skipping site ranking render.");
-} else {
-  siteList.innerHTML = ''; // Clear existing content
+  siteList.innerHTML = '';
   const maxCount = sortedSites[0]?.[1] || 1;
 
   sortedSites.forEach(([site, count]) => {
