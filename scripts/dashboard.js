@@ -88,127 +88,97 @@ async function loadUploads(token) {
 }
 async function loadSummaryCards() {
   try {
-    let websiteCounts = {};
-    let shipped = { count: 0, value: 0 };
-    let cancelled = { count: 0, value: 0 };
-    let returned = { count: 0, value: 0 };
+    // Define the platforms and their tables
+    const platforms = [
+      { name: 'Amazon', table: 'amazon_master_orders', statusCol: 'order_status' },
+      { name: 'Jiomart', table: 'jiomart_master_orders', statusCol: 'order_status' }
+    ];
 
-    // --- AMAZON ---
-    const { data: amazonStats, error: amazonError } = await supabase
-      .from('AmazonMasterOrder')
-      .select(`
-        status,
-        count:count(*),
-        total_value:sum(order_value)
-      `)
-      .group('status');
+    const websiteCounts = {};
 
-    if (amazonError) throw amazonError;
+    // Fetch counts per platform
+    for (const platform of platforms) {
+      const { data, error } = await supabase
+        .from(platform.table)
+        .select(`${platform.statusCol}`, { count: 'exact', head: false });
 
-    let amazonTotalOrders = 0;
-    amazonStats.forEach(row => {
-      const count = row.count || 0;
-      const value = row.total_value || 0;
-      amazonTotalOrders += count;
-
-      if (row.status === 'shipped') {
-        shipped.count += count;
-        shipped.value += value;
+      if (error) {
+        console.error(`❌ Error loading ${platform.name} data:`, error);
+        continue;
       }
-      if (row.status === 'cancelled') {
-        cancelled.count += count;
-        cancelled.value += value;
-      }
-      if (row.status === 'returned') {
-        returned.count += count;
-        returned.value += value;
-      }
-    });
-    websiteCounts['Amazon'] = amazonTotalOrders;
 
-    // --- JIOMART ---
-    const { data: jiomartStats, error: jiomartError } = await supabase
-      .from('JiomartMasterOrder')
-      .select(`
-        status,
-        count:count(*),
-        total_value:sum(order_value)
-      `)
-      .group('status');
+      // Initialize counts
+      websiteCounts[platform.name] = {
+        shipped: 0,
+        cancelled: 0,
+        returned: 0,
+        total: 0
+      };
 
-    if (jiomartError) throw jiomartError;
+      // Aggregate counts
+      data.forEach(row => {
+        const status = String(row[platform.statusCol] || '').toLowerCase();
+        websiteCounts[platform.name].total++;
+        if (status.includes('shipped')) websiteCounts[platform.name].shipped++;
+        else if (status.includes('cancelled')) websiteCounts[platform.name].cancelled++;
+        else if (status.includes('returned')) websiteCounts[platform.name].returned++;
+      });
+    }
 
-    let jiomartTotalOrders = 0;
-    jiomartStats.forEach(row => {
-      const count = row.count || 0;
-      const value = row.total_value || 0;
-      jiomartTotalOrders += count;
-
-      if (row.status === 'shipped') {
-        shipped.count += count;
-        shipped.value += value;
-      }
-      if (row.status === 'cancelled') {
-        cancelled.count += count;
-        cancelled.value += value;
-      }
-      if (row.status === 'returned') {
-        returned.count += count;
-        returned.value += value;
-      }
-    });
-    websiteCounts['Jiomart'] = jiomartTotalOrders;
-
-    // --- PAYMENTS (optional, per platform or total) ---
-    const { data: paymentsStats, error: payError } = await supabase
-      .from('payments_summary') // replace with your actual payments table or view
-      .select(`
-        total_paid:sum(paid_amount),
-        total_charges:sum(charges_amount)
+    // Update cards for each website
+    Object.entries(websiteCounts).forEach(([site, counts]) => {
+      setCard(`${site.toLowerCase()}-shipped-card`, `
+        <h3>${site} Shipped</h3>
+        <p>${counts.shipped.toLocaleString()}</p>
       `);
+      setCard(`${site.toLowerCase()}-cancelled-card`, `
+        <h3>${site} Cancelled</h3>
+        <p>${counts.cancelled.toLocaleString()}</p>
+      `);
+      setCard(`${site.toLowerCase()}-returned-card`, `
+        <h3>${site} Returned</h3>
+        <p>${counts.returned.toLocaleString()}</p>
+      `);
+    });
 
-    if (payError) throw payError;
-
-    const paid = paymentsStats[0]?.total_paid || 0;
-    const charges = paymentsStats[0]?.total_charges || 0;
-    const outstanding = paid - charges;
-
-    // --- Render Summary Cards ---
-    setCard('shipped-card', `<h3>Shipped Orders</h3><p>${shipped.count}</p><small>₹${shipped.value.toLocaleString()}</small>`);
-    setCard('cancelled-card', `<h3>Cancelled Orders</h3><p>${cancelled.count}</p><small>₹${cancelled.value.toLocaleString()}</small>`);
-    setCard('returned-card', `<h3>Returned Orders</h3><p>${returned.count}</p><small>₹${returned.value.toLocaleString()}</small>`);
-    setCard('paid-card', `<h3>Total Paid</h3><p>₹${paid.toLocaleString()}</p>`);
-    setCard('charges-card', `<h3>Total Charges</h3><p>₹${charges.toLocaleString()}</p>`);
-    setCard('outstanding-card', `<h3>Outstanding</h3><p>₹${outstanding.toLocaleString()}</p>`);
-
-    // --- Render Website Ranking (inside Orders by Website card) ---
-    renderWebsiteRanking(websiteCounts);
+    // Also render the orders-by-website bar chart
+    const orderCountMap = {};
+    for (const [site, counts] of Object.entries(websiteCounts)) {
+      orderCountMap[site] = counts.total;
+    }
+    renderWebsiteRanking(orderCountMap);
 
   } catch (err) {
-    console.error("❌ Error loading summary cards:", err);
+    console.error('❌ Error loading summary cards:', err);
   }
 }
-
-function setCard(id, content) {
-  const el = document.getElementById(id);
-  if (el) el.innerHTML = content;
-}
-
 function renderWebsiteRanking(websiteCounts) {
-  const container = document.getElementById('platformList'); // inside Orders by Website card
-  if (!container) return;
+  // Find the container *inside* the Orders by Website card
+  const siteList = document.querySelector('#orders-by-website .site-ranking');
 
-  container.innerHTML = '';
-  const sortedSites = Object.entries(websiteCounts).sort((a, b) => b[1] - a[1]);
+  if (!siteList) {
+    console.warn("⚠️ .site-ranking element not found inside Orders by Website card.");
+    return;
+  }
+
+  // Sort platforms by highest order count
+  const sortedSites = Object.entries(websiteCounts)
+    .sort((a, b) => b[1] - a[1]);
+
+  // Clear previous render
+  siteList.innerHTML = '';
+
+  // Max value for scaling bars
   const maxCount = sortedSites[0]?.[1] || 1;
 
+  // Render each website row
   sortedSites.forEach(([site, count]) => {
-    const percentage = (count / maxCount) * 100;
-    container.innerHTML += `
+    const percentage = (count / maxCount) * 100; // auto-scale bar
+    siteList.innerHTML += `
       <div class="site-row">
         <span class="site-name">${site}</span>
         <div class="progress-bar">
-          <div class="progress-fill" style="width:${percentage}%;"></div>
+          <div class="progress-fill" style="width:${percentage.toFixed(1)}%;"></div>
         </div>
         <span class="site-count">${count.toLocaleString()}</span>
       </div>
