@@ -31,10 +31,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     localStorage.setItem("sb-refresh-token", newSession.refresh_token);
   }
 });
-  loadDashboard(session.access_token, session.user);
-  document.getElementById("logoutBtn").addEventListener("click", onLogout);
-});
 
+// ✅ Now safe to load dashboard
+await loadDashboard(session.access_token, session.user);
+// ✅ Attach event listeners
+const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+  logoutBtn.addEventListener("click", onLogout);
+  }
+});
 function redirectToLogin() {
   window.location.href = "index.html";
 }
