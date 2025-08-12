@@ -91,7 +91,6 @@ async function loadSummaryCards() {
 
   const { data: amazonOrders, error: aoError } = await supabase
     .from('amazon_master_orders')
-    // change this any other column that calculates the total amount received after all deductions made for an order
     .select('status, total_paid');
 
   if (aoError) {
@@ -108,19 +107,22 @@ async function loadSummaryCards() {
     return;
   }
 
-  const allOrders = [...amazonOrders, ...jiomartOrders];
+  // Combine for status calculations
+  const allOrders = [
+    ...amazonOrders.map(o => ({ status: o.status, value: Number(o.total_paid) || 0 })),
+    ...jiomartOrders.map(o => ({ status: o.order_status, value: Number(o.pay_net_amount) || 0 }))
+  ];
 
   for (const order of allOrders) {
-    const val = Number(order.order_total_amount) || 0;
-    if (order.order_status === 'SHIPPED') {
+    if (order.status === 'SHIPPED') {
       shipped.count++;
-      shipped.value += val;
-    } else if (order.order_status === 'CANCELLED') {
+      shipped.value += order.value;
+    } else if (order.status === 'CANCELLED') {
       cancelled.count++;
-      cancelled.value += val;
-    } else if (order.order_status === 'RETURNED') {
+      cancelled.value += order.value;
+    } else if (order.status === 'RETURNED') {
       returned.count++;
-      returned.value += val;
+      returned.value += order.value;
     }
   }
 
@@ -134,8 +136,7 @@ async function loadSummaryCards() {
   }
 
   const { data: jiomartPay, error: jpError } = await supabase
-    // change this to jiomart_payment_Statements after creating a table for payments and making logic corrections in the back end
-    .from('jiomart_unmatched_payment')
+    .from('jiomart_unmatched_payment') // change later to jiomart_payment_statements
     .select('net_amount');
 
   if (jpError) {
@@ -143,22 +144,57 @@ async function loadSummaryCards() {
     return;
   }
 
-  const paid = [...amazonPay, ...jiomartPay].reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+  const paid = [
+    ...amazonPay.map(r => Number(r.total_amount) || 0),
+    ...jiomartPay.map(r => Number(r.net_amount) || 0)
+  ].reduce((sum, val) => sum + val, 0);
 
   const charges = 300000; // static for now
   const outstanding = paid - charges;
 
-  // ✅ Update UI
+  // ✅ Update UI cards
   document.getElementById('shipped-card').innerHTML = `
-    <h3>Shipped Orders</h3><p>${shipped.count}</p><small>₹${shipped.value.toLocaleString()}</small>`;
+    <h3>Shipped Orders</h3>
+    <p>${shipped.count}</p>
+    <small>₹${shipped.value.toLocaleString()}</small>`;
   document.getElementById('cancelled-card').innerHTML = `
-    <h3>Cancelled Orders</h3><p>${cancelled.count}</p><small>₹${cancelled.value.toLocaleString()}</small>`;
+    <h3>Cancelled Orders</h3>
+    <p>${cancelled.count}</p>
+    <small>₹${cancelled.value.toLocaleString()}</small>`;
   document.getElementById('returned-card').innerHTML = `
-    <h3>Returned Orders</h3><p>${returned.count}</p><small>₹${returned.value.toLocaleString()}</small>`;
+    <h3>Returned Orders</h3>
+    <p>${returned.count}</p>
+    <small>₹${returned.value.toLocaleString()}</small>`;
   document.getElementById('paid-card').innerHTML = `
     <h3>Total Paid</h3><p>₹${paid.toLocaleString()}</p>`;
   document.getElementById('charges-card').innerHTML = `
     <h3>Total Charges</h3><p>₹${charges.toLocaleString()}</p>`;
   document.getElementById('outstanding-card').innerHTML = `
     <h3>Outstanding</h3><p>₹${outstanding.toLocaleString()}</p>`;
+
+  // 📊 Website ranking data
+  const websiteCounts = {
+    Amazon: amazonOrders.length,
+    Jiomart: jiomartOrders.length
+  };
+
+  const sortedSites = Object.entries(websiteCounts)
+    .sort((a, b) => b[1] - a[1]); // sort by order count desc
+
+  const siteList = document.getElementById('site-ranking');
+  siteList.innerHTML = '';
+  const maxCount = sortedSites[0]?.[1] || 1;
+
+  sortedSites.forEach(([site, count]) => {
+    const percentage = (count / maxCount) * 100;
+    siteList.innerHTML += `
+      <div class="site-row">
+        <span class="site-name">${site}</span>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${percentage}%;"></div>
+        </div>
+        <span class="site-count">${count}</span>
+      </div>
+    `;
+  });
 }
