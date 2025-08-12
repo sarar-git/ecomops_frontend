@@ -190,6 +190,8 @@ function renderWebsiteRanking(websiteCounts) {
     .sort((a, b) => b[1] - a[1]);
 
   siteList.innerHTML = '';
+  console.log("Sorted sites:", sortedSites);
+  console.log("Max count:", maxCount);
   const counts = sortedSites.map(([, count]) => count);
   const maxCount = counts.length ? Math.max(...counts) : 1;
 
