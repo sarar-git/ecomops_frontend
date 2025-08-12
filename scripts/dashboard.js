@@ -97,20 +97,20 @@ async function loadUploads(token) {
 }
 async function loadSummaryCards() {
   try {
-    // 1️⃣ Define the platforms in one place for easy extension
+    // 1️⃣ Platform config
     const platforms = [
       { name: 'Amazon', table: 'amazon_master_orders', statusCol: 'status' },
       { name: 'Jiomart', table: 'jiomart_master_orders', statusCol: 'order_status' }
-      // Just add more here: { name: 'Flipkart', table: 'flipkart_orders', statusCol: 'status' }
     ];
 
+    // 2️⃣ Storage for all counts
     const websiteCounts = {};
 
-    // 2️⃣ Fetch counts for each platform
+    // 3️⃣ Fetch & process data
     for (const platform of platforms) {
       const { data, error } = await supabase
         .from(platform.table)
-        .select(platform.statusCol, { count: 'exact', head: false });
+        .select(`${platform.statusCol}`, { count: 'exact', head: false });
 
       if (error) {
         console.error(`❌ Error loading ${platform.name} data:`, error);
@@ -130,36 +130,16 @@ async function loadSummaryCards() {
       });
     }
 
-    // 3️⃣ Dynamically render the cards
-    const container = document.querySelector('#platform-cards');
-    if (!container) {
-      console.warn("⚠️ No #platform-cards container found in HTML.");
-      return;
-    }
-    container.innerHTML = ''; // Clear old cards
-
-    Object.entries(websiteCounts).forEach(([site, counts]) => {
-      container.innerHTML += `
-        <div class="card">
-          <h3>${site} Shipped</h3>
-          <p>${counts.shipped.toLocaleString()}</p>
-        </div>
-        <div class="card">
-          <h3>${site} Cancelled</h3>
-          <p>${counts.cancelled.toLocaleString()}</p>
-        </div>
-        <div class="card">
-          <h3>${site} Returned</h3>
-          <p>${counts.returned.toLocaleString()}</p>
-        </div>
-      `;
+    // 4️⃣ Render each status type with progress bars
+    ['shipped', 'cancelled', 'returned'].forEach(statusType => {
+      renderStatusRanking(statusType, websiteCounts);
     });
 
-    // 4️⃣ Render Orders by Platform chart
+    // 5️⃣ Render orders-by-website card (total counts)
     const orderCountMap = {};
-    for (const [site, counts] of Object.entries(websiteCounts)) {
+    Object.entries(websiteCounts).forEach(([site, counts]) => {
       orderCountMap[site] = counts.total;
-    }
+    });
     renderWebsiteRanking(orderCountMap);
 
   } catch (err) {
@@ -167,21 +147,51 @@ async function loadSummaryCards() {
   }
 }
 
-// ✅ Chart rendering
-function renderWebsiteRanking(websiteCounts) {
-  const siteList = document.querySelector('#orders-by-platform .site-ranking');
+// ♻️ Reusable progress bar renderer
+function renderStatusRanking(statusType, websiteCounts) {
+  const container = document.querySelector(`#${statusType}-card .site-ranking`);
 
-  if (!siteList) {
-    console.warn("⚠️ .site-ranking element not found inside Orders by Platform card.");
+  if (!container) {
+    console.warn(`⚠️ .site-ranking not found in #${statusType}-card`);
     return;
   }
 
-  // Sort by order count
-  const sortedSites = Object.entries(websiteCounts).sort((a, b) => b[1] - a[1]);
-  siteList.innerHTML = '';
+  const sortedSites = Object.entries(websiteCounts)
+    .map(([site, counts]) => [site, counts[statusType] || 0])
+    .sort((a, b) => b[1] - a[1]);
 
-  // Get max count from all platforms
-  const maxCount = Math.max(...sortedSites.map(([_, count]) => count), 1);
+  container.innerHTML = '';
+  const maxCount = sortedSites[0]?.[1] || 1;
+
+  sortedSites.forEach(([site, count]) => {
+    const percentage = (count / maxCount) * 100;
+    container.innerHTML += `
+      <div class="site-row">
+        <span class="site-name">${site}</span>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${percentage.toFixed(1)}%;"></div>
+        </div>
+        <span class="site-count">${count.toLocaleString()}</span>
+      </div>
+    `;
+  });
+}
+
+// 📊 Existing renderer for total orders
+function renderWebsiteRanking(websiteCounts) {
+  const siteList = document.querySelector('#orders-by-website .site-ranking');
+
+  if (!siteList) {
+    console.warn("⚠️ .site-ranking element not found inside Orders by Website card.");
+    return;
+  }
+
+  const sortedSites = Object.entries(websiteCounts)
+    .sort((a, b) => b[1] - a[1]);
+
+  siteList.innerHTML = '';
+  const counts = sortedSites.map(([, count]) => count);
+  const maxCount = counts.length ? Math.max(...counts) : 1;
 
 
   sortedSites.forEach(([site, count]) => {
