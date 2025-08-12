@@ -48,6 +48,15 @@ async function onLogout() {
   redirectToLogin();
 }
 
+function setCard(elementId, html) {
+  const el = document.getElementById(elementId);
+  if (el) {
+    el.innerHTML = html;
+  } else {
+    console.warn(`⚠️ Card element #${elementId} not found.`);
+  }
+}
+
 async function loadDashboard(token, user) {
   document.getElementById("message").innerText = `Welcome, ${user.email}`;
 
