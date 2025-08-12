@@ -173,17 +173,23 @@ async function loadSummaryCards() {
   setCard('charges-card', `<h3>Total Charges</h3><p>₹${charges.toLocaleString()}</p>`);
   setCard('outstanding-card', `<h3>Outstanding</h3><p>₹${outstanding.toLocaleString()}</p>`);
 
-  // 📊 Website ranking data
-  const websiteCounts = {
-    Amazon: amazonOrders.length,
-    Jiomart: jiomartOrders.length
-  };
+ // 📊 Website ranking data
+const websiteCounts = {
+  Amazon: amazonOrders.length,
+  Jiomart: jiomartOrders.length
+};
 
-  const sortedSites = Object.entries(websiteCounts)
-    .sort((a, b) => b[1] - a[1]); // sort by order count desc
+// Sort by order count (descending)
+const sortedSites = Object.entries(websiteCounts)
+  .sort((a, b) => b[1] - a[1]);
 
-  const siteList = document.getElementById('site-ranking');
-  siteList.innerHTML = '';
+// Find container element
+const siteList = document.getElementById('site-ranking');
+
+if (!siteList) {
+  console.warn("⚠️ #site-ranking element not found in DOM. Skipping site ranking render.");
+} else {
+  siteList.innerHTML = ''; // Clear existing content
   const maxCount = sortedSites[0]?.[1] || 1;
 
   sortedSites.forEach(([site, count]) => {
