@@ -97,19 +97,20 @@ async function loadUploads(token) {
 }
 async function loadSummaryCards() {
   try {
-    // Define the platforms and their tables
+    // 1️⃣ Define the platforms in one place for easy extension
     const platforms = [
       { name: 'Amazon', table: 'amazon_master_orders', statusCol: 'status' },
       { name: 'Jiomart', table: 'jiomart_master_orders', statusCol: 'order_status' }
+      // Just add more here: { name: 'Flipkart', table: 'flipkart_orders', statusCol: 'status' }
     ];
 
     const websiteCounts = {};
 
-    // Fetch counts per platform
+    // 2️⃣ Fetch counts for each platform
     for (const platform of platforms) {
       const { data, error } = await supabase
         .from(platform.table)
-        .select(`${platform.statusCol}`, { count: 'exact', head: false });
+        .select(platform.statusCol, { count: 'exact', head: false });
 
       if (error) {
         console.error(`❌ Error loading ${platform.name} data:`, error);
@@ -117,12 +118,7 @@ async function loadSummaryCards() {
       }
 
       // Initialize counts
-      websiteCounts[platform.name] = {
-        shipped: 0,
-        cancelled: 0,
-        returned: 0,
-        total: 0
-      };
+      websiteCounts[platform.name] = { shipped: 0, cancelled: 0, returned: 0, total: 0 };
 
       // Aggregate counts
       data.forEach(row => {
@@ -134,23 +130,32 @@ async function loadSummaryCards() {
       });
     }
 
-    // Update cards for each website
+    // 3️⃣ Dynamically render the cards
+    const container = document.querySelector('#platform-cards');
+    if (!container) {
+      console.warn("⚠️ No #platform-cards container found in HTML.");
+      return;
+    }
+    container.innerHTML = ''; // Clear old cards
+
     Object.entries(websiteCounts).forEach(([site, counts]) => {
-      setCard(`${site.toLowerCase()}-shipped-card`, `
-        <h3>${site} Shipped</h3>
-        <p>${counts.shipped.toLocaleString()}</p>
-      `);
-      setCard(`${site.toLowerCase()}-cancelled-card`, `
-        <h3>${site} Cancelled</h3>
-        <p>${counts.cancelled.toLocaleString()}</p>
-      `);
-      setCard(`${site.toLowerCase()}-returned-card`, `
-        <h3>${site} Returned</h3>
-        <p>${counts.returned.toLocaleString()}</p>
-      `);
+      container.innerHTML += `
+        <div class="card">
+          <h3>${site} Shipped</h3>
+          <p>${counts.shipped.toLocaleString()}</p>
+        </div>
+        <div class="card">
+          <h3>${site} Cancelled</h3>
+          <p>${counts.cancelled.toLocaleString()}</p>
+        </div>
+        <div class="card">
+          <h3>${site} Returned</h3>
+          <p>${counts.returned.toLocaleString()}</p>
+        </div>
+      `;
     });
 
-    // Also render the orders-by-website bar chart
+    // 4️⃣ Render Orders by Platform chart
     const orderCountMap = {};
     for (const [site, counts] of Object.entries(websiteCounts)) {
       orderCountMap[site] = counts.total;
@@ -161,28 +166,24 @@ async function loadSummaryCards() {
     console.error('❌ Error loading summary cards:', err);
   }
 }
+
+// ✅ Chart rendering
 function renderWebsiteRanking(websiteCounts) {
-  // Find the container *inside* the Orders by Website card
-  const siteList = document.querySelector('#orders-by-website .site-ranking');
+  const siteList = document.querySelector('#orders-by-platform .site-ranking');
 
   if (!siteList) {
-    console.warn("⚠️ .site-ranking element not found inside Orders by Website card.");
+    console.warn("⚠️ .site-ranking element not found inside Orders by Platform card.");
     return;
   }
 
-  // Sort platforms by highest order count
-  const sortedSites = Object.entries(websiteCounts)
-    .sort((a, b) => b[1] - a[1]);
-
-  // Clear previous render
+  // Sort by order count
+  const sortedSites = Object.entries(websiteCounts).sort((a, b) => b[1] - a[1]);
   siteList.innerHTML = '';
 
-  // Max value for scaling bars
   const maxCount = sortedSites[0]?.[1] || 1;
 
-  // Render each website row
   sortedSites.forEach(([site, count]) => {
-    const percentage = (count / maxCount) * 100; // auto-scale bar
+    const percentage = (count / maxCount) * 100;
     siteList.innerHTML += `
       <div class="site-row">
         <span class="site-name">${site}</span>
