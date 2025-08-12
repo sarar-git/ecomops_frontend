@@ -18,24 +18,23 @@
   </header>
 
   <div class="container">
-    <!-- Summary Cards -->
+    <!-- Orders by Platform -->
     <div class="card-row">
       <div id="orders-by-platform" class="card">
         <h3>Orders by Platform</h3>
-        <div id="site-ranking"></div>
+        <div id="site-ranking" class="site-ranking"></div>
       </div>
-      <div id="shipped-card" class="card"></div>
-      <div id="cancelled-card" class="card"></div>
-      <div id="returned-card" class="card"></div>
     </div>
+
+    <!-- Platform-specific cards (auto-generated) -->
+    <div id="platform-cards" class="card-row"></div>
+
+    <!-- Overall Summary -->
     <div class="card-row">
       <div id="paid-card" class="card"></div>
       <div id="charges-card" class="card"></div>
       <div id="outstanding-card" class="card"></div>
     </div>
-    <ul id="fileList"></ul>
-  </div>
-
   <script src="scripts/dashboard.js" type="module"></script>
 </body>
 </html>
