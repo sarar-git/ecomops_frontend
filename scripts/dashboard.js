@@ -90,7 +90,7 @@ async function loadSummaryCards() {
   try {
     // Define the platforms and their tables
     const platforms = [
-      { name: 'Amazon', table: 'amazon_master_orders', statusCol: 'order_status' },
+      { name: 'Amazon', table: 'amazon_master_orders', statusCol: 'status' },
       { name: 'Jiomart', table: 'jiomart_master_orders', statusCol: 'order_status' }
     ];
 
