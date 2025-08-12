@@ -154,17 +154,22 @@ async function loadSummaryCards() {
 }
 
 function renderWebsiteRanking(websiteCounts) {
+  // Sort websites by order count (highest first)
   const sortedSites = Object.entries(websiteCounts).sort((a, b) => b[1] - a[1]);
-  const siteList = document.getElementById('site-ranking');
 
+  // Target the container inside "Orders by Website" card
+  const siteList = document.getElementById('site-ranking');
   if (!siteList) {
-    console.warn("⚠️ #site-ranking element not found. Skipping site ranking render.");
+    console.warn("⚠️ #site-ranking element not found in Orders by Website card. Skipping render.");
     return;
   }
 
   siteList.innerHTML = '';
+
+  // Find the largest order count for scaling the bars
   const maxCount = sortedSites[0]?.[1] || 1;
 
+  // Build the progress bars
   sortedSites.forEach(([site, count]) => {
     const percentage = (count / maxCount) * 100;
     siteList.innerHTML += `
