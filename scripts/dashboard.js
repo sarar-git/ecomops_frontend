@@ -97,59 +97,103 @@ function setCard(id, html) {
 }
 
 async function loadSummaryCards() {
-  const shipped = { count: 0, value: 0 };
-  const cancelled = { count: 0, value: 0 };
-  const returned = { count: 0, value: 0 };
+  try {
+    // Fetch counts & totals grouped by status + platform
+    const { data: orderStats, error: statsError } = await supabase
+      .from('orders') // replace with your combined orders view or table
+      .select(`
+        platform,
+        status,
+        count:count(*),
+        total_value:sum(order_value)
+      `, { count: 'exact' })
+      .group('platform, status');
 
-  const { data: amazonOrders, error: aoError } = await supabase
-    .from('amazon_master_orders')
-    .select('status, total_paid');
-  if (aoError) return console.error("❌ Error fetching Amazon orders:", aoError);
+    if (statsError) throw statsError;
 
-  const { data: jiomartOrders, error: joError } = await supabase
-    .from('jiomart_master_orders')
-    .select('order_status, pay_net_amount');
-  if (joError) return console.error("❌ Error fetching Jiomart orders:", joError);
+    // Process into summary cards + ranking
+    let websiteCounts = {};
+    let shipped = { count: 0, value: 0 };
+    let cancelled = { count: 0, value: 0 };
+    let returned = { count: 0, value: 0 };
 
-  // Merge orders and compute counts
-  [...amazonOrders.map(o => ({ status: o.status, value: +o.total_paid || 0 })),
-   ...jiomartOrders.map(o => ({ status: o.order_status, value: +o.pay_net_amount || 0 }))
-  ].forEach(order => {
-    if (order.status === 'SHIPPED') { shipped.count++; shipped.value += order.value; }
-    else if (order.status === 'CANCELLED') { cancelled.count++; cancelled.value += order.value; }
-    else if (order.status === 'RETURNED') { returned.count++; returned.value += order.value; }
-  });
+    orderStats.forEach(row => {
+      const platform = row.platform;
+      const count = row.count || 0;
+      const value = row.total_value || 0;
 
-  // Payments
-  const { data: amazonPay, error: apError } = await supabase
-    .from('amazon_payment_statements')
-    .select('total_amount');
-  if (apError) return console.error("❌ Error fetching Amazon payments:", apError);
+      // Track per platform total orders
+      websiteCounts[platform] = (websiteCounts[platform] || 0) + count;
 
-  const { data: jiomartPay, error: jpError } = await supabase
-    .from('jiomart_unmatched_payment') // TODO: Change when ready
-    .select('net_amount');
-  if (jpError) return console.error("❌ Error fetching Jiomart payments:", jpError);
+      // Populate shipped / cancelled / returned totals
+      if (row.status === 'shipped') {
+        shipped.count += count;
+        shipped.value += value;
+      }
+      if (row.status === 'cancelled') {
+        cancelled.count += count;
+        cancelled.value += value;
+      }
+      if (row.status === 'returned') {
+        returned.count += count;
+        returned.value += value;
+      }
+    });
 
-  const paid = [...amazonPay.map(r => +r.total_amount || 0),
-                ...jiomartPay.map(r => +r.net_amount || 0)]
-                .reduce((sum, val) => sum + val, 0);
+    // Fetch payments summary
+    const { data: paymentStats, error: payError } = await supabase
+      .from('payments')
+      .select(`
+        total_paid:sum(paid_amount),
+        total_charges:sum(charges_amount)
+      `);
 
-  const charges = 300000; // static placeholder
-  const outstanding = paid - charges;
+    if (payError) throw payError;
 
-  // Render cards
-  setCard('shipped-card', `<h3>Shipped Orders</h3><p>${shipped.count}</p><small>₹${shipped.value.toLocaleString()}</small>`);
-  setCard('cancelled-card', `<h3>Cancelled Orders</h3><p>${cancelled.count}</p><small>₹${cancelled.value.toLocaleString()}</small>`);
-  setCard('returned-card', `<h3>Returned Orders</h3><p>${returned.count}</p><small>₹${returned.value.toLocaleString()}</small>`);
-  setCard('paid-card', `<h3>Total Paid</h3><p>₹${paid.toLocaleString()}</p>`);
-  setCard('charges-card', `<h3>Total Charges</h3><p>₹${charges.toLocaleString()}</p>`);
-  setCard('outstanding-card', `<h3>Outstanding</h3><p>₹${outstanding.toLocaleString()}</p>`);
+    const paid = paymentStats[0]?.total_paid || 0;
+    const charges = paymentStats[0]?.total_charges || 0;
+    const outstanding = paid - charges;
 
-  // Website ranking
-  renderWebsiteRanking({
-    Amazon: amazonOrders.length,
-    Jiomart: jiomartOrders.length
+    // Render cards
+    setCard('shipped-card', `<h3>Shipped Orders</h3><p>${shipped.count}</p><small>₹${shipped.value.toLocaleString()}</small>`);
+    setCard('cancelled-card', `<h3>Cancelled Orders</h3><p>${cancelled.count}</p><small>₹${cancelled.value.toLocaleString()}</small>`);
+    setCard('returned-card', `<h3>Returned Orders</h3><p>${returned.count}</p><small>₹${returned.value.toLocaleString()}</small>`);
+    setCard('paid-card', `<h3>Total Paid</h3><p>₹${paid.toLocaleString()}</p>`);
+    setCard('charges-card', `<h3>Total Charges</h3><p>₹${charges.toLocaleString()}</p>`);
+    setCard('outstanding-card', `<h3>Outstanding</h3><p>₹${outstanding.toLocaleString()}</p>`);
+
+    // Render website ranking bars inside "Orders by Website" card
+    renderWebsiteRanking(websiteCounts);
+
+  } catch (err) {
+    console.error("❌ Error loading summary cards:", err);
+  }
+}
+
+function setCard(id, content) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = content;
+}
+
+function renderWebsiteRanking(websiteCounts) {
+  const container = document.getElementById('platformList');
+  if (!container) return;
+
+  container.innerHTML = '';
+  const sortedSites = Object.entries(websiteCounts).sort((a, b) => b[1] - a[1]);
+  const maxCount = sortedSites[0]?.[1] || 1;
+
+  sortedSites.forEach(([site, count]) => {
+    const percentage = (count / maxCount) * 100;
+    container.innerHTML += `
+      <div class="site-row">
+        <span class="site-name">${site}</span>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${percentage}%;"></div>
+        </div>
+        <span class="site-count">${count.toLocaleString()}</span>
+      </div>
+    `;
   });
 }
 
