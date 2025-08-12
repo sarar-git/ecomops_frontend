@@ -86,46 +86,31 @@ async function loadUploads(token) {
     console.error("⚠️ Error loading uploads:", err);
   }
 }
-
-function setCard(id, html) {
-  const el = document.getElementById(id);
-  if (!el) {
-    console.warn(`⚠️ Element #${id} not found`);
-    return;
-  }
-  el.innerHTML = html;
-}
-
 async function loadSummaryCards() {
   try {
-    // Fetch counts & totals grouped by status + platform
-    const { data: orderStats, error: statsError } = await supabase
-      .from('orders') // replace with your combined orders view or table
-      .select(`
-        platform,
-        status,
-        count:count(*),
-        total_value:sum(order_value)
-      `, { count: 'exact' })
-      .group('platform, status');
-
-    if (statsError) throw statsError;
-
-    // Process into summary cards + ranking
     let websiteCounts = {};
     let shipped = { count: 0, value: 0 };
     let cancelled = { count: 0, value: 0 };
     let returned = { count: 0, value: 0 };
 
-    orderStats.forEach(row => {
-      const platform = row.platform;
+    // --- AMAZON ---
+    const { data: amazonStats, error: amazonError } = await supabase
+      .from('AmazonMasterOrder')
+      .select(`
+        status,
+        count:count(*),
+        total_value:sum(order_value)
+      `)
+      .group('status');
+
+    if (amazonError) throw amazonError;
+
+    let amazonTotalOrders = 0;
+    amazonStats.forEach(row => {
       const count = row.count || 0;
       const value = row.total_value || 0;
+      amazonTotalOrders += count;
 
-      // Track per platform total orders
-      websiteCounts[platform] = (websiteCounts[platform] || 0) + count;
-
-      // Populate shipped / cancelled / returned totals
       if (row.status === 'shipped') {
         shipped.count += count;
         shipped.value += value;
@@ -139,10 +124,44 @@ async function loadSummaryCards() {
         returned.value += value;
       }
     });
+    websiteCounts['Amazon'] = amazonTotalOrders;
 
-    // Fetch payments summary
-    const { data: paymentStats, error: payError } = await supabase
-      .from('payments')
+    // --- JIOMART ---
+    const { data: jiomartStats, error: jiomartError } = await supabase
+      .from('JiomartMasterOrder')
+      .select(`
+        status,
+        count:count(*),
+        total_value:sum(order_value)
+      `)
+      .group('status');
+
+    if (jiomartError) throw jiomartError;
+
+    let jiomartTotalOrders = 0;
+    jiomartStats.forEach(row => {
+      const count = row.count || 0;
+      const value = row.total_value || 0;
+      jiomartTotalOrders += count;
+
+      if (row.status === 'shipped') {
+        shipped.count += count;
+        shipped.value += value;
+      }
+      if (row.status === 'cancelled') {
+        cancelled.count += count;
+        cancelled.value += value;
+      }
+      if (row.status === 'returned') {
+        returned.count += count;
+        returned.value += value;
+      }
+    });
+    websiteCounts['Jiomart'] = jiomartTotalOrders;
+
+    // --- PAYMENTS (optional, per platform or total) ---
+    const { data: paymentsStats, error: payError } = await supabase
+      .from('payments_summary') // replace with your actual payments table or view
       .select(`
         total_paid:sum(paid_amount),
         total_charges:sum(charges_amount)
@@ -150,11 +169,11 @@ async function loadSummaryCards() {
 
     if (payError) throw payError;
 
-    const paid = paymentStats[0]?.total_paid || 0;
-    const charges = paymentStats[0]?.total_charges || 0;
+    const paid = paymentsStats[0]?.total_paid || 0;
+    const charges = paymentsStats[0]?.total_charges || 0;
     const outstanding = paid - charges;
 
-    // Render cards
+    // --- Render Summary Cards ---
     setCard('shipped-card', `<h3>Shipped Orders</h3><p>${shipped.count}</p><small>₹${shipped.value.toLocaleString()}</small>`);
     setCard('cancelled-card', `<h3>Cancelled Orders</h3><p>${cancelled.count}</p><small>₹${cancelled.value.toLocaleString()}</small>`);
     setCard('returned-card', `<h3>Returned Orders</h3><p>${returned.count}</p><small>₹${returned.value.toLocaleString()}</small>`);
@@ -162,7 +181,7 @@ async function loadSummaryCards() {
     setCard('charges-card', `<h3>Total Charges</h3><p>₹${charges.toLocaleString()}</p>`);
     setCard('outstanding-card', `<h3>Outstanding</h3><p>₹${outstanding.toLocaleString()}</p>`);
 
-    // Render website ranking bars inside "Orders by Website" card
+    // --- Render Website Ranking (inside Orders by Website card) ---
     renderWebsiteRanking(websiteCounts);
 
   } catch (err) {
@@ -176,7 +195,7 @@ function setCard(id, content) {
 }
 
 function renderWebsiteRanking(websiteCounts) {
-  const container = document.getElementById('platformList');
+  const container = document.getElementById('platformList'); // inside Orders by Website card
   if (!container) return;
 
   container.innerHTML = '';
@@ -192,37 +211,6 @@ function renderWebsiteRanking(websiteCounts) {
           <div class="progress-fill" style="width:${percentage}%;"></div>
         </div>
         <span class="site-count">${count.toLocaleString()}</span>
-      </div>
-    `;
-  });
-}
-
-function renderWebsiteRanking(websiteCounts) {
-  // Sort websites by order count (highest first)
-  const sortedSites = Object.entries(websiteCounts).sort((a, b) => b[1] - a[1]);
-
-  // Target the container inside "Orders by Website" card
-  const siteList = document.getElementById('site-ranking');
-  if (!siteList) {
-    console.warn("⚠️ #site-ranking element not found in Orders by Website card. Skipping render.");
-    return;
-  }
-
-  siteList.innerHTML = '';
-
-  // Find the largest order count for scaling the bars
-  const maxCount = sortedSites[0]?.[1] || 1;
-
-  // Build the progress bars
-  sortedSites.forEach(([site, count]) => {
-    const percentage = (count / maxCount) * 100;
-    siteList.innerHTML += `
-      <div class="site-row">
-        <span class="site-name">${site}</span>
-        <div class="progress-bar">
-          <div class="progress-fill" style="width:${percentage}%;"></div>
-        </div>
-        <span class="site-count">${count}</span>
       </div>
     `;
   });
