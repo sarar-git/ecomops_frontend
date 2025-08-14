@@ -18,27 +18,33 @@
   </header>
 
   <div class="container">
-    <!-- Orders by Platform -->
+    <!-- Cards Row -->
     <div class="card-row">
       <div id="orders-by-website" class="card">
         <h3>Orders by Platform</h3>
         <div class="site-ranking"></div>
       </div>
+  
+      <div class="card" id="shipped-card">
+        <h3>Shipped Orders</h3>
+        <div class="site-ranking"></div>
+      </div>
+  
+      <div class="card" id="cancelled-card">
+        <h3>Cancelled Orders</h3>
+        <div class="site-ranking"></div>
+      </div>
+  
+      <div class="card" id="returned-card">
+        <h3>Returned Orders</h3>
+        <div class="site-ranking"></div>
+      </div>
     </div>
-    <div class="card" id="shipped-card">
-      <h3>Shipped Orders</h3>
-      <div class="site-ranking"></div>
-    </div>
-    <div class="card" id="cancelled-card">
-      <h3>Cancelled Orders</h3>
-      <div class="site-ranking"></div>
-    </div>
-    <div class="card" id="returned-card">
-      <h3>Returned Orders</h3>
-      <div class="site-ranking"></div>
-    </div>
-    <ul id="fileList"></ul>
-    </div>
+
+  <!-- File list -->
+  <ul id="fileList"></ul>
+</div>
+
   <script src="scripts/dashboard.js" type="module"></script>
 </body>
 </html>
