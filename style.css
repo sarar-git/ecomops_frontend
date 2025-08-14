@@ -80,9 +80,10 @@ header {
 /* Row layout for multiple cards (responsive) */
 .cards-row {
   display: flex;
-  flex-wrap: wrap;          /* Allows wrapping on smaller screens */
-  gap: 20px;                /* Space between cards */
-  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 20px;
+  justify-content: space-between; /* spreads them evenly */
 }
 
 .cards-row .card {
@@ -101,6 +102,8 @@ header {
   border-radius: 10px;
   box-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
   text-align: center;
+  flex: 1 1 calc(25% - 20px); /* 4 cards per row */
+  min-width: 220px; /* shrink point */
 }
 
 .card h3 {
@@ -211,3 +214,4 @@ header {
   width: 50px;
   text-align: right;
 }
+
