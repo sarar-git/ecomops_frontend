@@ -97,49 +97,57 @@ async function loadUploads(token) {
 }
 async function loadSummaryCards() {
   try {
-    // 1️⃣ Platform config
     const platforms = [
       { name: 'Amazon', table: 'amazon_master_orders', statusCol: 'status' },
       { name: 'Jiomart', table: 'jiomart_master_orders', statusCol: 'order_status' }
     ];
 
-    // 2️⃣ Storage for all counts
     const websiteCounts = {};
 
-    // 3️⃣ Fetch & process data
     for (const platform of platforms) {
-      const { data, error } = await supabase
-        .from(platform.table)
-        .select(`${platform.statusCol}`, { count: 'exact', head: false });
-
-      if (error) {
-        console.error(`❌ Error loading ${platform.name} data:`, error);
-        continue;
-      }
-
-      // Initialize counts
       websiteCounts[platform.name] = { shipped: 0, cancelled: 0, returned: 0, total: 0 };
 
-      // Aggregate counts
-      data.forEach(row => {
-        const status = String(row[platform.statusCol] || '').toLowerCase();
-        websiteCounts[platform.name].total++;
-        if (status.includes('shipped')) websiteCounts[platform.name].shipped++;
-        else if (status.includes('cancelled')) websiteCounts[platform.name].cancelled++;
-        else if (status.includes('returned')) websiteCounts[platform.name].returned++;
-      });
+      // ✅ Total count
+      const { count: totalCount, error: totalError } = await supabase
+        .from(platform.table)
+        .select('*', { count: 'exact', head: true });
+
+      if (!totalError) websiteCounts[platform.name].total = totalCount || 0;
+
+      // ✅ Shipped count
+      const { count: shippedCount, error: shippedError } = await supabase
+        .from(platform.table)
+        .select('*', { count: 'exact', head: true })
+        .ilike(platform.statusCol, '%shipped%');
+
+      if (!shippedError) websiteCounts[platform.name].shipped = shippedCount || 0;
+
+      // ✅ Cancelled count
+      const { count: cancelledCount, error: cancelledError } = await supabase
+        .from(platform.table)
+        .select('*', { count: 'exact', head: true })
+        .ilike(platform.statusCol, '%cancelled%');
+
+      if (!cancelledError) websiteCounts[platform.name].cancelled = cancelledCount || 0;
+
+      // ✅ Returned count
+      const { count: returnedCount, error: returnedError } = await supabase
+        .from(platform.table)
+        .select('*', { count: 'exact', head: true })
+        .ilike(platform.statusCol, '%returned%');
+
+      if (!returnedError) websiteCounts[platform.name].returned = returnedCount || 0;
     }
 
-    // 4️⃣ Render each status type with progress bars
+    // Render each status type card
     ['shipped', 'cancelled', 'returned'].forEach(statusType => {
       renderStatusRanking(statusType, websiteCounts);
     });
 
-    // 5️⃣ Render orders-by-website card (total counts)
-    const orderCountMap = {};
-    Object.entries(websiteCounts).forEach(([site, counts]) => {
-      orderCountMap[site] = counts.total;
-    });
+    // Render orders-by-website card
+    const orderCountMap = Object.fromEntries(
+      Object.entries(websiteCounts).map(([site, counts]) => [site, counts.total])
+    );
     renderWebsiteRanking(orderCountMap);
 
   } catch (err) {
