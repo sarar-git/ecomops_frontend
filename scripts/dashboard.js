@@ -97,6 +97,13 @@ async function loadUploads(token) {
 }
 async function loadSummaryCards() {
   try {
+    
+    // 🌀 Show loaders for all summary cards
+    showLoader("orders-by-website");
+    showLoader("shipped-card");
+    showLoader("cancelled-card");
+    showLoader("returned-card");
+    
     const platforms = [
       { name: 'Amazon', table: 'amazon_master_orders', statusCol: 'status' },
       { name: 'Jiomart', table: 'jiomart_master_orders', statusCol: 'order_status' }
@@ -153,6 +160,12 @@ async function loadSummaryCards() {
   } catch (err) {
     console.error('❌ Error loading summary cards:', err);
   }
+} finally {
+  // ✅ Hide loaders once everything is rendered
+  hideLoader("orders-by-website");
+  hideLoader("shipped-card");
+  hideLoader("cancelled-card");
+  hideLoader("returned-card");
 }
 
 // ♻️ Reusable progress bar renderer
