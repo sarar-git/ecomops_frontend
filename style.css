@@ -80,8 +80,8 @@ header {
 /* Row layout for multiple cards (responsive) */
 .card-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
+  flex-wrap: nowrap;
+  gap: 10px;
   margin-bottom: 20px;
   justify-content: space-between; /* spreads them evenly */
 }
@@ -214,5 +214,6 @@ header {
   width: 50px;
   text-align: right;
 }
+
 
 
