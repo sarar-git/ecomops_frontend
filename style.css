@@ -78,7 +78,7 @@ header {
 }
 
 /* Row layout for multiple cards (responsive) */
-.cards-row {
+.card-row {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
@@ -86,8 +86,8 @@ header {
   justify-content: space-between; /* spreads them evenly */
 }
 
-.cards-row .card {
-  flex: 1 1 calc(33.333% - 20px); /* 3 cards per row */
+.cars-row .card {
+  flex: 1 1 calc(25% - 20px); /* 3 cards per row */
   min-width: 250px;               /* Avoid cards becoming too narrow */
   max-width: 350px;               /* Optional: avoid extra wide cards */
   box-sizing: border-box;
@@ -214,4 +214,5 @@ header {
   width: 50px;
   text-align: right;
 }
+
 
