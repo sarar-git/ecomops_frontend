@@ -95,6 +95,22 @@ async function loadUploads(token) {
     console.error("⚠️ Error loading uploads:", err);
   }
 }
+//Loader functions
+function showLoader(cardId) {
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.classList.add("loading");
+    card.innerHTML = `<div class="loader"></div>`; // Replace card content with spinner
+  }
+}
+
+function hideLoader(cardId) {
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.classList.remove("loading");
+  }
+}
+
 async function loadSummaryCards() {
   try {
     
