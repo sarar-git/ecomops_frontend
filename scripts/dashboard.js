@@ -159,13 +159,13 @@ async function loadSummaryCards() {
 
   } catch (err) {
     console.error('❌ Error loading summary cards:', err);
-  }
-} finally {
+  } finally {
   // ✅ Hide loaders once everything is rendered
   hideLoader("orders-by-website");
   hideLoader("shipped-card");
   hideLoader("cancelled-card");
   hideLoader("returned-card");
+  }
 }
 
 // ♻️ Reusable progress bar renderer
