@@ -122,7 +122,7 @@ async function loadSummaryCards() {
     "returned-card",
     "paid-card",
     "charges-card",
-    "order-value-card",
+    "order-value-card", 
     "outstanding-card"
   ].forEach(showLoader);
 
@@ -131,14 +131,16 @@ async function loadSummaryCards() {
     const res = await fetch("https://ecomops-sarar20225.onrender.com/dashboard/summary/");
     const websiteCounts = await res.json();
 
+    // Render shipped, cancelled, returned status bars
     ["shipped", "cancelled", "returned"].forEach(type => {
       renderStatusRanking(type, websiteCounts);
     });
 
+    // Render total orders per site
     const orderCountMap = Object.fromEntries(
       Object.entries(websiteCounts).map(([site, counts]) => [site, counts.total])
     );
-    renderWebsiteRanking(orderCountMap);
+    renderWebsiteRanking(orderCountMap, "orders-by-website");
 
     // 2️⃣ Fetch financial summary
     const resFinancial = await fetch("https://ecomops-sarar20225.onrender.com/dashboard/financial-summary/");
@@ -146,23 +148,44 @@ async function loadSummaryCards() {
 
     let totalPaid = 0, totalCharges = 0, totalOrderValue = 0, totalOutstanding = 0;
 
-    Object.values(financialData).forEach(values => {
-      totalPaid += values.paid_amount || 0;
-      totalCharges += values.charges || 0;
-      totalOrderValue += values.order_amount || 0;
-      totalOutstanding += values.outstanding || 0;
+    const paidMap = {};
+    const chargesMap = {};
+    const orderValueMap = {};
+    const outstandingMap = {};
+
+    Object.entries(financialData).forEach(([site, values]) => {
+      const paid = values.paid_amount || 0;
+      const charges = values.charges || 0;
+      const orderVal = values.order_amount || 0;
+      const outstanding = values.outstanding || 0;
+
+      paidMap[site] = paid;
+      chargesMap[site] = charges;
+      orderValueMap[site] = orderVal;
+      outstandingMap[site] = outstanding;
+
+      totalPaid += paid;
+      totalCharges += charges;
+      totalOrderValue += orderVal;
+      totalOutstanding += outstanding;
     });
 
-    // Render into cards
+    // Update totals in cards
     document.querySelector("#paid-card .value").textContent = formatCurrency(totalPaid);
     document.querySelector("#charges-card .value").textContent = formatCurrency(totalCharges);
-    document.querySelector("#ordervalue-card .value").textContent = formatCurrency(totalOrderValue);
+    document.querySelector("#order-value-card .value").textContent = formatCurrency(totalOrderValue);
     document.querySelector("#outstanding-card .value").textContent = formatCurrency(totalOutstanding);
+
+    // Render per-site bars
+    renderWebsiteRanking(paidMap, "paid-card");
+    renderWebsiteRanking(chargesMap, "charges-card");
+    renderWebsiteRanking(orderValueMap, "order-value-card");
+    renderWebsiteRanking(outstandingMap, "outstanding-card");
 
   } catch (err) {
     console.error("Error loading summary cards:", err);
   } finally {
-     // Hide loaders for all cards
+    // Hide loaders for all cards
     [
       "orders-by-website",
       "shipped-card",
@@ -210,12 +233,12 @@ function renderStatusRanking(statusType, websiteCounts) {
   });
 }
 
-// 📊 Existing renderer for total orders
-function renderWebsiteRanking(websiteCounts) {
-  const siteList = document.querySelector('#orders-by-website .site-ranking');
+// 📊 Dynamic renderer for totals like orders, paid, charges, outstanding
+function renderWebsiteRanking(websiteCounts, cardId = "orders-by-website") {
+  const siteList = document.querySelector(`#${cardId} .site-ranking`);
 
   if (!siteList) {
-    console.warn("⚠️ .site-ranking element not found inside Orders by Website card.");
+    console.warn(`⚠️ .site-ranking element not found inside #${cardId} card.`);
     return;
   }
 
@@ -223,11 +246,7 @@ function renderWebsiteRanking(websiteCounts) {
     .sort((a, b) => b[1] - a[1]);
 
   siteList.innerHTML = ''; 
-  const counts = sortedSites.map(([, count]) => count);
-  const maxCount = counts.length ? Math.max(...counts) : 1;
-  console.log("Sorted sites:", sortedSites);
-  console.log("Max count:", maxCount);
-
+  const maxCount = sortedSites[0]?.[1] || 1;
 
   sortedSites.forEach(([site, count]) => {
     const percentage = (count / maxCount) * 100;
