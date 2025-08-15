@@ -122,7 +122,7 @@ async function loadSummaryCards() {
     "returned-card",
     "paid-card",
     "charges-card",
-    "ordervalue-card",
+    "order-value-card",
     "outstanding-card"
   ].forEach(showLoader);
 
@@ -170,7 +170,7 @@ async function loadSummaryCards() {
       "returned-card",
       "paid-card",
       "charges-card",
-      "ordervalue-card",
+      "order-value-card",
       "outstanding-card"
     ].forEach(hideLoader);
   }
