@@ -114,12 +114,20 @@ function hideLoader(cardId) {
   if (content) content.style.display = "block";
 }
 async function loadSummaryCards() {
-  showLoader("orders-by-website");
-  showLoader("shipped-card");
-  showLoader("cancelled-card");
-  showLoader("returned-card");
+  // Show loaders for all cards
+  [
+    "orders-by-website",
+    "shipped-card",
+    "cancelled-card",
+    "returned-card",
+    "paid-card",
+    "charges-card",
+    "ordervalue-card",
+    "outstanding-card"
+  ].forEach(showLoader);
 
   try {
+    // 1️⃣ Fetch orders summary
     const res = await fetch("https://ecomops-sarar20225.onrender.com/dashboard/summary/");
     const websiteCounts = await res.json();
 
@@ -131,17 +139,46 @@ async function loadSummaryCards() {
       Object.entries(websiteCounts).map(([site, counts]) => [site, counts.total])
     );
     renderWebsiteRanking(orderCountMap);
+
+    // 2️⃣ Fetch financial summary
+    const resFinancial = await fetch("https://ecomops-sarar20225.onrender.com/dashboard/financial-summary/");
+    const financialData = await resFinancial.json();
+
+    let totalPaid = 0, totalCharges = 0, totalOrderValue = 0, totalOutstanding = 0;
+
+    Object.values(financialData).forEach(values => {
+      totalPaid += values.paid_amount || 0;
+      totalCharges += values.charges || 0;
+      totalOrderValue += values.order_amount || 0;
+      totalOutstanding += values.outstanding || 0;
+    });
+
+    // Render into cards
+    document.querySelector("#paid-card .value").textContent = formatCurrency(totalPaid);
+    document.querySelector("#charges-card .value").textContent = formatCurrency(totalCharges);
+    document.querySelector("#ordervalue-card .value").textContent = formatCurrency(totalOrderValue);
+    document.querySelector("#outstanding-card .value").textContent = formatCurrency(totalOutstanding);
+
   } catch (err) {
     console.error("Error loading summary cards:", err);
   } finally {
-    hideLoader("orders-by-website");
-    hideLoader("shipped-card");
-    hideLoader("cancelled-card");
-    hideLoader("returned-card");
+     // Hide loaders for all cards
+    [
+      "orders-by-website",
+      "shipped-card",
+      "cancelled-card",
+      "returned-card",
+      "paid-card",
+      "charges-card",
+      "ordervalue-card",
+      "outstanding-card"
+    ].forEach(hideLoader);
   }
 }
 
-
+function formatCurrency(amount) {
+  return "₹" + amount.toLocaleString("en-IN", { minimumFractionDigits: 2 });
+}
 
 // ♻️ Reusable progress bar renderer
 function renderStatusRanking(statusType, websiteCounts) {
