@@ -119,7 +119,7 @@ async function loadSummaryCards() {
   const STATUS_MAP = {
     shipped: {
       Amazon: ['PAID', 'SHIPPED'],
-      Jiomart: ['PAID-SHIPMENT']
+      Jiomart: ['ordered', 'PAID-SHIPMENT', 'PAID']
     },
     cancelled: {
       Amazon: ['CANCELLED'],
