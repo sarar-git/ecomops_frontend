@@ -115,14 +115,42 @@ function hideLoader(cardId) {
 }
 
 async function loadSummaryCards() {
+  // ✅ Define a cross-platform status mapping
+  const STATUS_MAP = {
+    shipped: {
+      Amazon: ['PAID', 'SHIPPED'],
+      Jiomart: ['PAID-SHIPMENT']
+    },
+    cancelled: {
+      Amazon: ['CANCELLED'],
+      Jiomart: ['CANCELLED']
+    },
+    returned: {
+      Amazon: ['RETURNED'],
+      Jiomart: ['RETURNED', 'PAID-RETURN']
+    }
+  };
+
+  // ✅ Helper function to count orders by multiple statuses
+  async function getCountForStatuses(table, statusCol, statuses) {
+    let total = 0;
+    for (const status of statuses) {
+      const { count, error } = await supabase
+        .from(table)
+        .select('*', { count: 'exact', head: true })
+        .ilike(statusCol, `%${status}%`);
+      if (!error) total += count || 0;
+    }
+    return total;
+  }
+
   try {
-    
     // 🌀 Show loaders for all summary cards
     showLoader("orders-by-website");
     showLoader("shipped-card");
     showLoader("cancelled-card");
     showLoader("returned-card");
-    
+
     const platforms = [
       { name: 'Amazon', table: 'amazon_master_orders', statusCol: 'status' },
       { name: 'Jiomart', table: 'jiomart_master_orders', statusCol: 'order_status' }
@@ -133,7 +161,7 @@ async function loadSummaryCards() {
     for (const platform of platforms) {
       websiteCounts[platform.name] = { shipped: 0, cancelled: 0, returned: 0, total: 0 };
 
-      // ✅ Total count
+      // ✅ Total orders for platform
       const { count: totalCount, error: totalError } = await supabase
         .from(platform.table)
         .select('*', { count: 'exact', head: true });
@@ -141,36 +169,33 @@ async function loadSummaryCards() {
       if (!totalError) websiteCounts[platform.name].total = totalCount || 0;
 
       // ✅ Shipped count
-      const { count: shippedCount, error: shippedError } = await supabase
-        .from(platform.table)
-        .select('*', { count: 'exact', head: true })
-        .ilike(platform.statusCol, '%shipped%');
-
-      if (!shippedError) websiteCounts[platform.name].shipped = shippedCount || 0;
+      websiteCounts[platform.name].shipped = await getCountForStatuses(
+        platform.table,
+        platform.statusCol,
+        STATUS_MAP.shipped[platform.name]
+      );
 
       // ✅ Cancelled count
-      const { count: cancelledCount, error: cancelledError } = await supabase
-        .from(platform.table)
-        .select('*', { count: 'exact', head: true })
-        .ilike(platform.statusCol, '%cancelled%');
-
-      if (!cancelledError) websiteCounts[platform.name].cancelled = cancelledCount || 0;
+      websiteCounts[platform.name].cancelled = await getCountForStatuses(
+        platform.table,
+        platform.statusCol,
+        STATUS_MAP.cancelled[platform.name]
+      );
 
       // ✅ Returned count
-      const { count: returnedCount, error: returnedError } = await supabase
-        .from(platform.table)
-        .select('*', { count: 'exact', head: true })
-        .ilike(platform.statusCol, '%returned%');
-
-      if (!returnedError) websiteCounts[platform.name].returned = returnedCount || 0;
+      websiteCounts[platform.name].returned = await getCountForStatuses(
+        platform.table,
+        platform.statusCol,
+        STATUS_MAP.returned[platform.name]
+      );
     }
 
-    // Render each status type card
+    // ✅ Render each status type card
     ['shipped', 'cancelled', 'returned'].forEach(statusType => {
       renderStatusRanking(statusType, websiteCounts);
     });
 
-    // Render orders-by-website card
+    // ✅ Render orders-by-website card
     const orderCountMap = Object.fromEntries(
       Object.entries(websiteCounts).map(([site, counts]) => [site, counts.total])
     );
@@ -179,11 +204,11 @@ async function loadSummaryCards() {
   } catch (err) {
     console.error('❌ Error loading summary cards:', err);
   } finally {
-  // ✅ Hide loaders once everything is rendered
-  hideLoader("orders-by-website");
-  hideLoader("shipped-card");
-  hideLoader("cancelled-card");
-  hideLoader("returned-card");
+    // ✅ Hide loaders once everything is rendered
+    hideLoader("orders-by-website");
+    hideLoader("shipped-card");
+    hideLoader("cancelled-card");
+    hideLoader("returned-card");
   }
 }
 
