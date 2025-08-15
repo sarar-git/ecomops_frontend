@@ -98,17 +98,20 @@ async function loadUploads(token) {
 //Loader functions
 function showLoader(cardId) {
   const card = document.getElementById(cardId);
-  if (card) {
-    card.classList.add("loading");
-    card.innerHTML = `<div class="loader"></div>`; // Replace card content with spinner
-  }
+  if (!card) return;
+  const loader = card.querySelector(".loader");
+  const content = card.querySelector(".site-ranking");
+  if (loader) loader.style.display = "block";
+  if (content) content.style.display = "none";
 }
 
 function hideLoader(cardId) {
   const card = document.getElementById(cardId);
-  if (card) {
-    card.classList.remove("loading");
-  }
+  if (!card) return;
+  const loader = card.querySelector(".loader");
+  const content = card.querySelector(".site-ranking");
+  if (loader) loader.style.display = "none";
+  if (content) content.style.display = "block";
 }
 
 async function loadSummaryCards() {
