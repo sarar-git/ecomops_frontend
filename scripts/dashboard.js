@@ -113,104 +113,35 @@ function hideLoader(cardId) {
   if (loader) loader.style.display = "none";
   if (content) content.style.display = "block";
 }
-
 async function loadSummaryCards() {
-  // ✅ Define a cross-platform status mapping
-  const STATUS_MAP = {
-    shipped: {
-      Amazon: ['PAID', 'SHIPPED'],
-      Jiomart: ['ordered', 'PAID-SHIPMENT', 'PAID']
-    },
-    cancelled: {
-      Amazon: ['CANCELLED'],
-      Jiomart: ['CANCELLED']
-    },
-    returned: {
-      Amazon: ['RETURNED'],
-      Jiomart: ['RETURNED', 'PAID-RETURN']
-    }
-  };
-
-  // ✅ Helper function to count orders by multiple statuses
-  async function getCountForStatuses(table, statusCol, statuses) {
-    let total = 0;
-    for (const status of statuses) {
-      const { count, error } = await supabase
-        .from(table)
-        .select('*', { count: 'exact', head: true })
-        .ilike(statusCol, `%${status}%`);
-      if (!error) total += count || 0;
-    }
-    return total;
-  }
+  showLoader("orders-by-website");
+  showLoader("shipped-card");
+  showLoader("cancelled-card");
+  showLoader("returned-card");
 
   try {
-    // 🌀 Show loaders for all summary cards
-    showLoader("orders-by-website");
-    showLoader("shipped-card");
-    showLoader("cancelled-card");
-    showLoader("returned-card");
+    const res = await fetch("https://ecomops-sarar20225.onrender.com/dashboard/summary/");
+    const websiteCounts = await res.json();
 
-    const platforms = [
-      { name: 'Amazon', table: 'amazon_master_orders', statusCol: 'status' },
-      { name: 'Jiomart', table: 'jiomart_master_orders', statusCol: 'order_status' }
-    ];
-
-    const websiteCounts = {};
-
-    for (const platform of platforms) {
-      websiteCounts[platform.name] = { shipped: 0, cancelled: 0, returned: 0, total: 0 };
-
-      // ✅ Total orders for platform
-      const { count: totalCount, error: totalError } = await supabase
-        .from(platform.table)
-        .select('*', { count: 'exact', head: true });
-
-      if (!totalError) websiteCounts[platform.name].total = totalCount || 0;
-
-      // ✅ Shipped count
-      websiteCounts[platform.name].shipped = await getCountForStatuses(
-        platform.table,
-        platform.statusCol,
-        STATUS_MAP.shipped[platform.name]
-      );
-
-      // ✅ Cancelled count
-      websiteCounts[platform.name].cancelled = await getCountForStatuses(
-        platform.table,
-        platform.statusCol,
-        STATUS_MAP.cancelled[platform.name]
-      );
-
-      // ✅ Returned count
-      websiteCounts[platform.name].returned = await getCountForStatuses(
-        platform.table,
-        platform.statusCol,
-        STATUS_MAP.returned[platform.name]
-      );
-    }
-
-    // ✅ Render each status type card
-    ['shipped', 'cancelled', 'returned'].forEach(statusType => {
-      renderStatusRanking(statusType, websiteCounts);
+    ["shipped", "cancelled", "returned"].forEach(type => {
+      renderStatusRanking(type, websiteCounts);
     });
 
-    // ✅ Render orders-by-website card
     const orderCountMap = Object.fromEntries(
       Object.entries(websiteCounts).map(([site, counts]) => [site, counts.total])
     );
     renderWebsiteRanking(orderCountMap);
-
   } catch (err) {
-    console.error('❌ Error loading summary cards:', err);
+    console.error("Error loading summary cards:", err);
   } finally {
-    // ✅ Hide loaders once everything is rendered
     hideLoader("orders-by-website");
     hideLoader("shipped-card");
     hideLoader("cancelled-card");
     hideLoader("returned-card");
   }
 }
+
+
 
 // ♻️ Reusable progress bar renderer
 function renderStatusRanking(statusType, websiteCounts) {
