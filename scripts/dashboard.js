@@ -86,9 +86,25 @@ async function loadUploads(token) {
 
     const uploads = await uploadsRes.json();
     const list = document.getElementById("fileList");
+    list.innerHTML = ""; // clear old list
+    
     uploads.forEach(u => {
       const li = document.createElement("li");
-      li.innerHTML = `<strong>${u.website}</strong> – ${u.report_type} (${u.duration}) – <a href="${u.file_url}" target="_blank">View</a>`;
+      // Show progress bar if in_progress
+      let progressHTML = "";
+      if (u.status === "in_progress") {
+        progressHTML = `
+          <div style="background:#eee;width:150px;height:10px;border-radius:5px;margin-top:5px;">
+            <div style="background:#4caf50;width:${u.progress || 0}%;height:10px;border-radius:5px;"></div>
+          </div>
+        `;
+      }
+      li.innerHTML = `<strong>${u.website}</strong> – ${u.report_type} (${u.duration}) – <a href="${u.file_url}" target="_blank">View</a><br>
+      Status: <span style="font-weight:bold;">${u.status}</span>
+      ${u.message ? `<br>Message: ${u.message}` : ""}
+      ${progressHTML}
+      `;
+      
       list.appendChild(li);
     });
   } catch (err) {
