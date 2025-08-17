@@ -174,7 +174,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   
         // ---- Poll just this upload until done ----
         const pollOne = async () => {
-          const res = await fetch(`${apiBase}/uploads/uploads/list/`, {
+          const res = await fetch(`${apiBase}/list/`, {
             headers: { Authorization: `Bearer ${freshToken}` },
           });
           if (!res.ok) return;
