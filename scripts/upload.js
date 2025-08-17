@@ -157,9 +157,28 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (uploadRes.ok) {
         statusDiv.innerText = "✅ Upload successful!";
         form.reset();
-      } else {
-        statusDiv.innerText = `❌ Upload failed: ${result.detail || "Unknown error"}`;
-      }
+
+        // 📝 Add upload entry to the list immediately
+        const list = document.getElementById("fileList");
+        const li = document.createElement("li");
+        li.setAttribute("data-id", result.id);
+        li.innerHTML = `
+          <strong>${result.website}</strong> – ${result.report_type} (${result.duration})
+          – <a href="${result.file_url}" target="_blank">View</a><br>
+          Status: <span class="status">${result.status}</span>
+        `;
+        list.prepend(li);
+      
+        // 🔄 Start polling if not already active
+        const freshSession2 = await supabase.auth.getSession();
+        const freshToken2 = freshSession2.data?.session?.access_token;
+      
+        if (!window.uploadPolling) {
+          window.uploadPolling = setInterval(() => loadUploads(freshToken2), 5000);
+        }        
+        } else {
+          statusDiv.innerText = `❌ Upload failed: ${result.detail || "Unknown error"}`;
+        }
     } catch (err) {
       console.error("🚨 Upload failed:", err);
       statusDiv.innerText = "❌ Upload failed. Please try again later.";
