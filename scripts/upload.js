@@ -157,8 +157,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (uploadRes.ok) {
         statusDiv.innerText = "✅ Upload successful!";
         form.reset();
-
-        // 📝 Add upload entry to the list immediately
+        
+        // ---- Add entry immediately ----
         const list = document.getElementById("fileList");
         const li = document.createElement("li");
         li.setAttribute("data-id", result.id);
@@ -166,22 +166,43 @@ document.addEventListener("DOMContentLoaded", async () => {
           <strong>${result.website}</strong> – ${result.report_type} (${result.duration})
           – <a href="${result.file_url}" target="_blank">View</a><br>
           Status: <span class="status">${result.status}</span>
+          <div class="progress" style="background:#eee;width:150px;height:10px;border-radius:5px;margin-top:5px;">
+            <div class="bar" style="background:#4caf50;width:0%;height:10px;border-radius:5px;"></div>
+          </div>
         `;
         list.prepend(li);
-      
-        // 🔄 Start polling if not already active
-        const freshSession2 = await supabase.auth.getSession();
-        const freshToken2 = freshSession2.data?.session?.access_token;
-      
-        if (!window.uploadPolling) {
-          window.uploadPolling = setInterval(() => loadUploads(freshToken2), 5000);
-        }        
-        } else {
-          statusDiv.innerText = `❌ Upload failed: ${result.detail || "Unknown error"}`;
-        }
+  
+        // ---- Poll just this upload until done ----
+        const pollOne = async () => {
+          const res = await fetch(`${apiBase}/uploads/list/`, {
+            headers: { Authorization: `Bearer ${freshToken}` },
+          });
+          if (!res.ok) return;
+          const uploads = await res.json();
+          const updated = uploads.find((u) => u.id === result.id);
+          if (updated) {
+            li.querySelector(".status").textContent = updated.status;
+            if (updated.progress) {
+              li.querySelector(".bar").style.width = `${updated.progress}%`;
+            }
+  
+            // stop polling once completed/failed
+            if (["completed", "failed"].includes(updated.status)) {
+              clearInterval(timer);
+            }
+          }
+        };
+  
+        const timer = setInterval(pollOne, 5000);
+        pollOne(); // run immediately once
+      } else {
+        statusDiv.innerText = `❌ Upload failed: ${
+          result.detail || "Unknown error"
+        }`;
+      }
     } catch (err) {
       console.error("🚨 Upload failed:", err);
       statusDiv.innerText = "❌ Upload failed. Please try again later.";
     }
   });
-});
+  Key imp
