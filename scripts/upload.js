@@ -182,7 +182,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           const updated = uploads.find((u) => u.id === result.id);
           if (updated) {
             li.querySelector(".status").textContent = updated.status;
-            if (updated.progress) {
+            if (updated.progress !== null && updated.progress !== undefined) {
               li.querySelector(".bar").style.width = `${updated.progress}%`;
             }
   
