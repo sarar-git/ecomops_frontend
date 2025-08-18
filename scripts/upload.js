@@ -187,7 +187,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
   
             // stop polling once completed/failed
-            if (["completed", "failed"].includes(updated.status)) {
+            if (["completed", "complete", "failed"].includes(updated.status)) {
               clearInterval(timer);
             }
           }
