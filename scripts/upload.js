@@ -193,7 +193,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
         };
   
-        const timer = setInterval(pollOne, 5000);
+        const timer = setInterval(pollOne, 30000);
         pollOne(); // run immediately once
       } else {
         statusDiv.innerText = `❌ Upload failed: ${
