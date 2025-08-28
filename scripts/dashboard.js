@@ -140,8 +140,7 @@ function hideLoader(cardId) {
   if (content) content.style.display = "block";
 }
 async function loadSummaryCards() {
-  // Show loaders for all cards
-  [
+  const cardIds = [
     "orders-by-website",
     "shipped-card",
     "cancelled-card",
@@ -150,23 +149,32 @@ async function loadSummaryCards() {
     "charges-card",
     "order-value-card",
     "outstanding-card"
-  ].forEach(showLoader);
+  ];
+
+  // Show loaders
+  cardIds.forEach(showLoader);
 
   try {
-    // Fetch summary from backend
     const res = await fetch("https://ecomops-sarar20225.onrender.com/dashboard/summary");
     if (!res.ok) throw new Error("Failed to fetch summary");
     const summary = await res.json();
 
-    // ✅ Update totals
-    document.querySelector("#shipped-card .value").textContent = summary.shipped_orders.toLocaleString();
-    document.querySelector("#cancelled-card .value").textContent = summary.cancelled_orders.toLocaleString();
-    document.querySelector("#returned-card .value").textContent = summary.returned_orders.toLocaleString();
+    // Safe helper to set card values
+    const safeSetText = (selector, value, isCurrency = false) => {
+      const el = document.querySelector(selector);
+      if (!el) return console.warn(`⚠️ Element not found: ${selector}`);
+      el.textContent = isCurrency ? formatCurrency(value) : Number(value || 0).toLocaleString();
+    };
 
-    document.querySelector("#order-value-card .value").textContent = formatCurrency(summary.total_order_value);
-    document.querySelector("#paid-card .value").textContent = formatCurrency(summary.total_paid);
-    document.querySelector("#charges-card .value").textContent = formatCurrency(summary.total_charges);
-    document.querySelector("#outstanding-card .value").textContent = formatCurrency(summary.total_outstanding);
+    // ✅ Update totals
+    safeSetText("#shipped-card .value", summary.shipped_orders);
+    safeSetText("#cancelled-card .value", summary.cancelled_orders);
+    safeSetText("#returned-card .value", summary.returned_orders);
+
+    safeSetText("#order-value-card .value", summary.total_order_value, true);
+    safeSetText("#paid-card .value", summary.total_paid, true);
+    safeSetText("#charges-card .value", summary.total_charges, true);
+    safeSetText("#outstanding-card .value", summary.total_outstanding, true);
 
     // ✅ Per-website breakdown
     renderWebsiteRanking(summary.by_website.orders, "orders-by-website");
@@ -178,22 +186,9 @@ async function loadSummaryCards() {
   } catch (err) {
     console.error("Error loading summary cards:", err);
   } finally {
-    // Hide loaders for all cards
-    [
-      "orders-by-website",
-      "shipped-card",
-      "cancelled-card",
-      "returned-card",
-      "paid-card",
-      "charges-card",
-      "order-value-card",
-      "outstanding-card"
-    ].forEach(hideLoader);
+    // Hide loaders
+    cardIds.forEach(hideLoader);
   }
-}
-
-function formatCurrency(amount) {
-  return "₹" + (amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 }
 
 // ♻️ Reusable progress bar renderer
