@@ -148,65 +148,32 @@ async function loadSummaryCards() {
     "returned-card",
     "paid-card",
     "charges-card",
-    "order-value-card", 
+    "order-value-card",
     "outstanding-card"
   ].forEach(showLoader);
 
   try {
-    // 1️⃣ Fetch orders summary
-    const res = await fetch("https://ecomops-sarar20225.onrender.com/dashboard/summary/");
-    const websiteCounts = await res.json();
+    // Fetch summary from backend
+    const res = await fetch("https://ecomops-sarar20225.onrender.com/dashboard/summary");
+    if (!res.ok) throw new Error("Failed to fetch summary");
+    const summary = await res.json();
 
-    // Render shipped, cancelled, returned status bars
-    ["shipped", "cancelled", "returned"].forEach(type => {
-      renderStatusRanking(type, websiteCounts);
-    });
+    // ✅ Update totals
+    document.querySelector("#shipped-card .value").textContent = summary.shipped_orders.toLocaleString();
+    document.querySelector("#cancelled-card .value").textContent = summary.cancelled_orders.toLocaleString();
+    document.querySelector("#returned-card .value").textContent = summary.returned_orders.toLocaleString();
 
-    // Render total orders per site
-    const orderCountMap = Object.fromEntries(
-      Object.entries(websiteCounts).map(([site, counts]) => [site, counts.total])
-    );
-    renderWebsiteRanking(orderCountMap, "orders-by-website");
+    document.querySelector("#order-value-card .value").textContent = formatCurrency(summary.total_order_value);
+    document.querySelector("#paid-card .value").textContent = formatCurrency(summary.total_paid);
+    document.querySelector("#charges-card .value").textContent = formatCurrency(summary.total_charges);
+    document.querySelector("#outstanding-card .value").textContent = formatCurrency(summary.total_outstanding);
 
-    // 2️⃣ Fetch financial summary
-    const resFinancial = await fetch("https://ecomops-sarar20225.onrender.com/dashboard/financial-summary/");
-    const financialData = await resFinancial.json();
-
-    let totalPaid = 0, totalCharges = 0, totalOrderValue = 0, totalOutstanding = 0;
-
-    const paidMap = {};
-    const chargesMap = {};
-    const orderValueMap = {};
-    const outstandingMap = {};
-
-    Object.entries(financialData).forEach(([site, values]) => {
-      const paid = values.paid_amount || 0;
-      const charges = values.charges || 0;
-      const orderVal = values.order_amount || 0;
-      const outstanding = values.outstanding || 0;
-
-      paidMap[site] = paid;
-      chargesMap[site] = charges;
-      orderValueMap[site] = orderVal;
-      outstandingMap[site] = outstanding;
-
-      totalPaid += paid;
-      totalCharges += charges;
-      totalOrderValue += orderVal;
-      totalOutstanding += outstanding;
-    });
-
-    // Update totals in cards
-    document.querySelector("#paid-card .value").textContent = formatCurrency(totalPaid);
-    document.querySelector("#charges-card .value").textContent = formatCurrency(totalCharges);
-    document.querySelector("#order-value-card .value").textContent = formatCurrency(totalOrderValue);
-    document.querySelector("#outstanding-card .value").textContent = formatCurrency(totalOutstanding);
-
-    // Render per-site bars
-    renderWebsiteRanking(paidMap, "paid-card");
-    renderWebsiteRanking(chargesMap, "charges-card");
-    renderWebsiteRanking(orderValueMap, "order-value-card");
-    renderWebsiteRanking(outstandingMap, "outstanding-card");
+    // ✅ Per-website breakdown
+    renderWebsiteRanking(summary.by_website.orders, "orders-by-website");
+    renderWebsiteRanking(summary.by_website.paid, "paid-card");
+    renderWebsiteRanking(summary.by_website.charges, "charges-card");
+    renderWebsiteRanking(summary.by_website.order_value, "order-value-card");
+    renderWebsiteRanking(summary.by_website.outstanding, "outstanding-card");
 
   } catch (err) {
     console.error("Error loading summary cards:", err);
@@ -226,7 +193,7 @@ async function loadSummaryCards() {
 }
 
 function formatCurrency(amount) {
-  return "₹" + amount.toLocaleString("en-IN", { minimumFractionDigits: 2 });
+  return "₹" + (amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 }
 
 // ♻️ Reusable progress bar renderer
