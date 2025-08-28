@@ -3,6 +3,103 @@ import { supabase } from './supabaseClient.js';
 
 document.addEventListener("DOMContentLoaded", initDashboard);
 
+/* ---------- Utils FIRST (so they're defined before use) ---------- */
+
+function formatCurrency(amount) {
+  const n = Number(amount || 0);
+  return "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function safeSetText(selector, value, { format } = {}) {
+  const el = document.querySelector(selector);
+  if (!el) {
+    console.warn(`⚠️ Element not found: ${selector}`);
+    return;
+  }
+  const text = format === "currency" ? formatCurrency(value) : String(value ?? "");
+  el.textContent = text;
+}
+
+//Loader functions
+function showLoader(cardId) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  const loader = card.querySelector(".loader");
+  const content = card.querySelector(".site-ranking");
+  if (loader) loader.style.display = "block";
+  if (content) content.style.display = "none";
+}
+
+function hideLoader(cardId) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  const loader = card.querySelector(".loader");
+  const content = card.querySelector(".site-ranking");
+  if (loader) loader.style.display = "none";
+  if (content) content.style.display = "block";
+}
+
+// ♻️ Reusable progress bar renderer
+function renderStatusRanking(statusType, websiteCounts) {
+  const container = document.querySelector(`#${statusType}-card .site-ranking`);
+
+  if (!container) {
+    console.warn(`⚠️ .site-ranking not found in #${statusType}-card`);
+    return;
+  }
+
+  const sortedSites = Object.entries(websiteCounts)
+    .map(([site, counts]) => [site, counts[statusType] || 0])
+    .sort((a, b) => b[1] - a[1]);
+
+  container.innerHTML = '';
+  const maxCount = sortedSites[0]?.[1] || 1;
+
+  sortedSites.forEach(([site, count]) => {
+    const percentage = (count / maxCount) * 100;
+    container.innerHTML += `
+      <div class="site-row">
+        <span class="site-name">${site}</span>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${percentage.toFixed(1)}%;"></div>
+        </div>
+        <span class="site-count">${count.toLocaleString()}</span>
+      </div>
+    `;
+  });
+}
+
+
+// 📊 Dynamic renderer for totals like orders, paid, charges, outstanding
+function renderWebsiteRanking(websiteCounts, cardId = "orders-by-website") {
+  const siteList = document.querySelector(`#${cardId} .site-ranking`);
+
+  if (!siteList) {
+    console.warn(`⚠️ .site-ranking element not found inside #${cardId} card.`);
+    return;
+  }
+
+  const sortedSites = Object.entries(websiteCounts)
+    .sort((a, b) => b[1] - a[1]);
+
+  siteList.innerHTML = ''; 
+  const maxCount = sortedSites[0]?.[1] || 1;
+
+  sortedSites.forEach(([site, count]) => {
+    const percentage = (count / maxCount) * 100;
+    siteList.innerHTML += `
+      <div class="site-row">
+        <span class="site-name">${site}</span>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${percentage.toFixed(1)}%;"></div>
+        </div>
+        <span class="site-count">${count.toLocaleString()}</span>
+      </div>
+    `;
+  });
+}
+
+/* -------------------- Auth + init -------------------- */
 async function initDashboard() {
   console.log("📦 Checking current session...");
 
@@ -56,6 +153,8 @@ function setCard(elementId, html) {
     console.warn(`⚠️ Card element #${elementId} not found.`);
   }
 }
+
+/* -------------------- Page loaders -------------------- */
 
 async function loadDashboard(token, user) {
   document.getElementById("message").innerText = `Welcome, ${user.email}`;
@@ -121,24 +220,6 @@ async function loadUploads(token) {
   }
 }
 
-//Loader functions
-function showLoader(cardId) {
-  const card = document.getElementById(cardId);
-  if (!card) return;
-  const loader = card.querySelector(".loader");
-  const content = card.querySelector(".site-ranking");
-  if (loader) loader.style.display = "block";
-  if (content) content.style.display = "none";
-}
-
-function hideLoader(cardId) {
-  const card = document.getElementById(cardId);
-  if (!card) return;
-  const loader = card.querySelector(".loader");
-  const content = card.querySelector(".site-ranking");
-  if (loader) loader.style.display = "none";
-  if (content) content.style.display = "block";
-}
 async function loadSummaryCards() {
   const cardIds = [
     "orders-by-website",
@@ -191,61 +272,44 @@ async function loadSummaryCards() {
   }
 }
 
-// ♻️ Reusable progress bar renderer
-function renderStatusRanking(statusType, websiteCounts) {
-  const container = document.querySelector(`#${statusType}-card .site-ranking`);
+/* -------------------- Uploads list -------------------- */
+async function loadUploads(token) {
+  try {
+    const uploadsRes = await fetch("https://ecomops-sarar20225.onrender.com/uploads/list/", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!uploadsRes.ok) throw new Error("Uploads fetch failed");
 
-  if (!container) {
-    console.warn(`⚠️ .site-ranking not found in #${statusType}-card`);
-    return;
+    const uploads = await uploadsRes.json();
+    const list = document.getElementById("fileList");
+    if (!list) return;
+
+    uploads.forEach(u => {
+      let li = list.querySelector(`li[data-id="${u.id}"]`);
+      if (!li) {
+        li = document.createElement("li");
+        li.setAttribute("data-id", u.id);
+        list.prepend(li);
+      }
+
+      let progressHTML = "";
+      if (u.status === "in_progress") {
+        progressHTML = `
+          <div style="background:#eee;width:150px;height:10px;border-radius:5px;margin-top:5px;">
+            <div style="width:${u.progress || 0}%;height:10px;border-radius:5px;"></div>
+          </div>
+        `;
+      }
+
+      li.innerHTML = `
+        <strong>${u.website}</strong> – ${u.report_type} (${u.duration})
+        – <a href="${u.file_url}" target="_blank" rel="noopener noreferrer">View</a><br>
+        Status: <span style="font-weight:bold;">${u.status}</span>
+        ${u.message ? `<br>Message: ${u.message}` : ""}
+        ${progressHTML}
+      `;
+    });
+  } catch (err) {
+    console.error("⚠️ Error loading uploads:", err);
   }
-
-  const sortedSites = Object.entries(websiteCounts)
-    .map(([site, counts]) => [site, counts[statusType] || 0])
-    .sort((a, b) => b[1] - a[1]);
-
-  container.innerHTML = '';
-  const maxCount = sortedSites[0]?.[1] || 1;
-
-  sortedSites.forEach(([site, count]) => {
-    const percentage = (count / maxCount) * 100;
-    container.innerHTML += `
-      <div class="site-row">
-        <span class="site-name">${site}</span>
-        <div class="progress-bar">
-          <div class="progress-fill" style="width:${percentage.toFixed(1)}%;"></div>
-        </div>
-        <span class="site-count">${count.toLocaleString()}</span>
-      </div>
-    `;
-  });
-}
-
-// 📊 Dynamic renderer for totals like orders, paid, charges, outstanding
-function renderWebsiteRanking(websiteCounts, cardId = "orders-by-website") {
-  const siteList = document.querySelector(`#${cardId} .site-ranking`);
-
-  if (!siteList) {
-    console.warn(`⚠️ .site-ranking element not found inside #${cardId} card.`);
-    return;
-  }
-
-  const sortedSites = Object.entries(websiteCounts)
-    .sort((a, b) => b[1] - a[1]);
-
-  siteList.innerHTML = ''; 
-  const maxCount = sortedSites[0]?.[1] || 1;
-
-  sortedSites.forEach(([site, count]) => {
-    const percentage = (count / maxCount) * 100;
-    siteList.innerHTML += `
-      <div class="site-row">
-        <span class="site-name">${site}</span>
-        <div class="progress-bar">
-          <div class="progress-fill" style="width:${percentage.toFixed(1)}%;"></div>
-        </div>
-        <span class="site-count">${count.toLocaleString()}</span>
-      </div>
-    `;
-  });
 }
