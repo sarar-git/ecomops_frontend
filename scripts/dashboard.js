@@ -270,4 +270,19 @@ async function loadSummaryCards() {
     // Hide loaders
     cardIds.forEach(hideLoader);
   }
+//--------REBUILD SUMMARY-----------------------------------------
+async function rebuildSummary() {
+  try {
+    const res = await fetch("/api/rebuild-summary", {
+      method: "POST"
+    });
+    const data = await res.json();
+    alert(data.message || "Rebuild triggered!");
+  } catch (err) {
+    console.error("Error rebuilding summary:", err);
+    alert("Failed to rebuild summary. Check console logs.");
+  }
+}
+
+  
 }
