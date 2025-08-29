@@ -273,22 +273,25 @@ async function loadSummaryCards() {
 //--------REBUILD SUMMARY-----------------------------------------
 async function rebuildSummary() {
   try {
-    const res = await fetch("/api/rebuild-summary", {
+    // use full URL if backend is on another origin
+    const res = await fetch("https://ecomops-sarar20225.onrender.com/rebuild-summary", {
       method: "POST"
     });
     const data = await res.json();
-    alert(data.message || "Rebuild triggered!");
+    alert(data.message || "Rebuild completed");
   } catch (err) {
     console.error("Error rebuilding summary:", err);
-    alert("Failed to rebuild summary. Check console logs.");
+    alert("Failed to trigger rebuild. See console.");
   }
 }
 
-  
-}
-
-document.getElementById("rebuild-btn")?.addEventListener("click", () => {
-  if (confirm("⚠️ This will wipe and rebuild all summary data. Continue?")) {
-    rebuildSummary();
+// attach handler after DOM / module init
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("rebuild-btn");
+  if (btn) {
+    btn.addEventListener("click", async () => {
+      if (!confirm("⚠️ This will ERASE and REBUILD all summary data. Continue?")) return;
+      await rebuildSummary();
+    });
   }
 });
