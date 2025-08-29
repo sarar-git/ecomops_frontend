@@ -270,10 +270,9 @@ async function loadSummaryCards() {
     // Hide loaders
     cardIds.forEach(hideLoader);
   }
-//--------REBUILD SUMMARY-----------------------------------------
+//-------------------------------------------------------- ✅ Rebuild daily summary from frontend
 async function rebuildSummary() {
   try {
-    // use full URL if backend is on another origin
     const res = await fetch("https://ecomops-sarar20225.onrender.com/rebuild-summary", {
       method: "POST"
     });
@@ -285,7 +284,7 @@ async function rebuildSummary() {
   }
 }
 
-// attach handler after DOM / module init
+// ✅ Attach to button after DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("rebuild-btn");
   if (btn) {
