@@ -270,6 +270,7 @@ async function loadSummaryCards() {
     // Hide loaders
     cardIds.forEach(hideLoader);
   }
+}
 //-------------------------------------------------------- ✅ Rebuild daily summary from frontend
 async function rebuildSummary() {
   try {
