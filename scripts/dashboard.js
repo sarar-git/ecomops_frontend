@@ -286,3 +286,9 @@ async function rebuildSummary() {
 
   
 }
+
+document.getElementById("rebuild-btn")?.addEventListener("click", () => {
+  if (confirm("⚠️ This will wipe and rebuild all summary data. Continue?")) {
+    rebuildSummary();
+  }
+});
