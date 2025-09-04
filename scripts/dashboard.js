@@ -236,7 +236,10 @@ async function loadSummaryCards() {
   cardIds.forEach(showLoader);
 
   try {
-    const res = await fetch("https://ecomops-sarar20225.onrender.com/dashboard/summary");
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    const res = await fetch("https://ecomops-sarar20225.onrender.com/dashboard/summary", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     if (!res.ok) throw new Error("Failed to fetch summary");
     const summary = await res.json();
 
@@ -274,8 +277,10 @@ async function loadSummaryCards() {
 //-------------------------------------------------------- ✅ Rebuild daily summary from frontend
 async function rebuildSummary() {
   try {
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
     const res = await fetch("https://ecomops-sarar20225.onrender.com/rebuild-summary", {
       method: "POST"
+      headers: { Authorization: `Bearer ${token}` }
     });
     const data = await res.json();
     alert(data.message || "Rebuild completed");
