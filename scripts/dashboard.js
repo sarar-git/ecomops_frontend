@@ -279,7 +279,7 @@ async function rebuildSummary() {
   try {
     const token = (await supabase.auth.getSession()).data.session?.access_token;
     const res = await fetch("https://ecomops-sarar20225.onrender.com/rebuild-summary", {
-      method: "POST"
+      method: "POST",
       headers: { Authorization: `Bearer ${token}` }
     });
     const data = await res.json();
