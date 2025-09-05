@@ -304,7 +304,7 @@ async function rebuildSummary(btn) {
     btn.textContent = "Starting rebuild... ⏳";
 
     const token = (await supabase.auth.getSession()).data.session?.access_token;
-    const res = await fetch("https://ecomops-sarar20225.onrender.com/rebuild-summary", {
+    const res = await fetch("https://ecomops-sarar20225.onrender.com/rebuild-summary/", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` }
     });
