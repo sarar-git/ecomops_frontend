@@ -275,28 +275,61 @@ async function loadSummaryCards() {
   }
 }
 //-------------------------------------------------------- ✅ Rebuild daily summary from frontend
-async function rebuildSummary() {
+async function pollRebuildProgress(sessionId, btn) {
   try {
+    const res = await fetch(`https://ecomops-sarar20225.onrender.com/rebuild-summary/progress/${sessionId}`);
+    const data = await res.json();
+
+    const progressLabel = document.getElementById("progress-label");
+    if (progressLabel) progressLabel.textContent = data.status;
+
+    if (!data.status.startsWith("✅") && !data.status.startsWith("❌")) {
+      setTimeout(() => pollRebuildProgress(sessionId, btn), 1000); // poll every second
+    } else {
+      // Re-enable button when finished
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Rebuild Summary";
+      }
+    }
+  } catch (err) {
+    console.error("Error polling rebuild progress:", err);
+    setTimeout(() => pollRebuildProgress(sessionId, btn), 3000); // retry after 3s
+  }
+}
+
+async function rebuildSummary(btn) {
+  try {
+    btn.disabled = true;
+    btn.textContent = "Starting rebuild... ⏳";
+
     const token = (await supabase.auth.getSession()).data.session?.access_token;
     const res = await fetch("https://ecomops-sarar20225.onrender.com/rebuild-summary", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` }
     });
+
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
     const data = await res.json();
-    alert(data.message || "Rebuild completed");
+    const sessionId = data.session_id;
+
+    pollRebuildProgress(sessionId, btn); // start polling
   } catch (err) {
-    console.error("Error rebuilding summary:", err);
+    console.error(err);
     alert("Failed to trigger rebuild. See console.");
+    btn.disabled = false;
+    btn.textContent = "Rebuild Summary";
   }
 }
 
-// ✅ Attach to button after DOM is ready
+// Attach to button
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("rebuild-btn");
   if (btn) {
     btn.addEventListener("click", async () => {
       if (!confirm("⚠️ This will ERASE and REBUILD all summary data. Continue?")) return;
-      await rebuildSummary();
+      await rebuildSummary(btn);
     });
   }
 });
