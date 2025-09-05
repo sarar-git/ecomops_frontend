@@ -277,7 +277,7 @@ async function loadSummaryCards() {
 //-------------------------------------------------------- ✅ Rebuild daily summary from frontend
 async function pollRebuildProgress(sessionId, btn) {
   try {
-    const res = await fetch(`https://ecomops-sarar20225.onrender.com/rebuild-summary/progress/${sessionId}`);
+    const res = await fetch(`https://ecomops-sarar20225.onrender.com/dashboard/rebuild-summary/progress/${sessionId}`);
     const data = await res.json();
 
     const progressLabel = document.getElementById("progress-label");
@@ -304,7 +304,7 @@ async function rebuildSummary(btn) {
     btn.textContent = "Starting rebuild... ⏳";
 
     const token = (await supabase.auth.getSession()).data.session?.access_token;
-    const res = await fetch("https://ecomops-sarar20225.onrender.com/rebuild-summary/", {
+    const res = await fetch("https://ecomops-sarar20225.onrender.com/dashboard/rebuild-summary", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` }
     });
