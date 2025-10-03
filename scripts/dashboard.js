@@ -24,19 +24,23 @@ function safeSetText(selector, value, { format } = {}) {
 function showLoader(cardId) {
   const card = document.getElementById(cardId);
   if (!card) return;
-  const loader = card.querySelector(".loader");
+  const skeleton = card.querySelector(".skeleton");
   const content = card.querySelector(".site-ranking");
-  if (loader) loader.style.display = "block";
+  const value = card.querySelector(".value");
+  if (skeleton) skeleton.style.display = "block";
   if (content) content.style.display = "none";
+  if (value) value.style.display = "none";
 }
 
 function hideLoader(cardId) {
   const card = document.getElementById(cardId);
   if (!card) return;
-  const loader = card.querySelector(".loader");
+  const skeleton = card.querySelector(".skeleton");
   const content = card.querySelector(".site-ranking");
-  if (loader) loader.style.display = "none";
+  const value = card.querySelector(".value");
+  if (skeleton) skeleton.style.display = "none";
   if (content) content.style.display = "block";
+  if (value) value.style.display = "block";
 }
 
 // ♻️ Reusable progress bar renderer
