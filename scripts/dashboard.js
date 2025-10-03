@@ -172,9 +172,10 @@ async function loadDashboard(token, user) {
     return;
   }
 
-  await loadSummaryCards();
-  await loadUploads(token);
-}
+  await Promise.all([
+    loadSummaryCards(),
+    loadUploads(token),
+]);
 
 async function loadUploads(token) {
   try {
